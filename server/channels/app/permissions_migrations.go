@@ -1237,6 +1237,20 @@ func getAddChannelAccessRulesPermissionMigration() (permissionsMap, error) {
 	}, nil
 }
 
+func getAddTeamAccessRulesPermissionMigration() (permissionsMap, error) {
+	return permissionsMap{
+		permissionTransformation{
+			On: permissionOr(
+				isRole(model.TeamAdminRoleId),
+				isRole(model.SystemAdminRoleId),
+			),
+			Add: []string{
+				model.PermissionManageTeamAccessRules.Id,
+			},
+		},
+	}, nil
+}
+
 func getAddChannelAutoTranslationPermissionMigration() (permissionsMap, error) {
 	return permissionsMap{
 		permissionTransformation{
@@ -1284,6 +1298,24 @@ func getRestoreManageOAuthPermissionMigration() (permissionsMap, error) {
 		permissionTransformation{
 			On:  isExactRole(model.SystemAdminRoleId),
 			Add: []string{model.PermissionManageOAuth.Id},
+		},
+	}, nil
+}
+
+func getAddManageAgentPermissionsMigration() (permissionsMap, error) {
+	return permissionsMap{
+		permissionTransformation{
+			On: isExactRole(model.SystemAdminRoleId),
+			Add: []string{
+				model.PermissionManageOwnAgent.Id,
+				model.PermissionManageOthersAgent.Id,
+			},
+		},
+		permissionTransformation{
+			On: isExactRole(model.SystemUserRoleId),
+			Add: []string{
+				model.PermissionManageOwnAgent.Id,
+			},
 		},
 	}, nil
 }
@@ -1343,9 +1375,11 @@ func getPermissionsMigrationEntries(getAllTeamSchemes func() []*model.Scheme) []
 		{Key: model.MigrationAddSysconsoleMobileSecurityPermission, Migration: addSysConsoleMobileSecurityPermission},
 		{Key: model.MigrationKeyAddChannelBannerPermissions, Migration: getAddChannelBannerPermissionMigration},
 		{Key: model.MigrationKeyAddChannelAccessRulesPermission, Migration: getAddChannelAccessRulesPermissionMigration},
+		{Key: model.MigrationKeyAddTeamAccessRulesPermission, Migration: getAddTeamAccessRulesPermissionMigration},
 		{Key: model.MigrationKeyAddChannelAutoTranslationPermissions, Migration: getAddChannelAutoTranslationPermissionMigration},
 		{Key: model.MigrationKeyAddSharedChannelManagerPermissions, Migration: getAddSharedChannelManagerPermissionsMigration},
 		{Key: model.MigrationKeyRestoreManageOAuthPermission, Migration: getRestoreManageOAuthPermissionMigration},
+		{Key: model.MigrationKeyAddManageAgentPermissions, Migration: getAddManageAgentPermissionsMigration},
 	}
 }
 
