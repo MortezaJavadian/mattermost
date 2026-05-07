@@ -6179,7 +6179,11 @@ func TestChannelGuardTwoPhaseDispatchOrdering(t *testing.T) {
 	mainHelper.Parallel(t)
 
 	// Guard plugin G: allow everything; records the message it received.
-	const srcG = `
+	// The destination file path is baked into the source at compile time so the
+	// plugin doesn't need to read it from the environment — process-global env
+	// mutation is incompatible with t.Parallel().
+	makeGuardSrc := func(receivedFile string) string {
+		return fmt.Sprintf(`
 package main
 
 import (
@@ -6193,15 +6197,15 @@ type GuardPlugin struct {
 }
 
 func (p *GuardPlugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
-	// Write the received message to a temp file so the test can read it.
-	_ = os.WriteFile(os.Getenv("GUARD_RECEIVED_FILE"), []byte(post.Message), 0644)
+	_ = os.WriteFile(%q, []byte(post.Message), 0644)
 	return nil, ""
 }
 
 func main() {
 	plugin.ClientMain(&GuardPlugin{})
 }
-`
+`, receivedFile)
+	}
 
 	// Non-guard plugin N: uppercases the message.
 	const srcN = `
@@ -6259,9 +6263,8 @@ func main() {
 		require.NoError(t, err)
 		receivedFile.Close()
 		defer os.Remove(receivedFile.Name())
-		t.Setenv("GUARD_RECEIVED_FILE", receivedFile.Name())
 
-		tearDown, pluginIDs, errs := SetAppEnvironmentWithPlugins(t, []string{srcG, srcN}, th.App, th.NewPluginAPI)
+		tearDown, pluginIDs, errs := SetAppEnvironmentWithPlugins(t, []string{makeGuardSrc(receivedFile.Name()), srcN}, th.App, th.NewPluginAPI)
 		defer tearDown()
 
 		require.Len(t, errs, 2)
@@ -6296,9 +6299,8 @@ func main() {
 		require.NoError(t, err)
 		receivedFile.Close()
 		defer os.Remove(receivedFile.Name())
-		t.Setenv("GUARD_RECEIVED_FILE", receivedFile.Name())
 
-		tearDown, pluginIDs, errs := SetAppEnvironmentWithPlugins(t, []string{srcG, srcNReject}, th.App, th.NewPluginAPI)
+		tearDown, pluginIDs, errs := SetAppEnvironmentWithPlugins(t, []string{makeGuardSrc(receivedFile.Name()), srcNReject}, th.App, th.NewPluginAPI)
 		defer tearDown()
 
 		require.Len(t, errs, 2)
@@ -6439,8 +6441,13 @@ func main() {
 func TestChannelGuardMultiClaimPhaseBSequence(t *testing.T) {
 	mainHelper.Parallel(t)
 
+	// Each plugin source is built per-subtest with its counter file path baked
+	// in as a Go literal. Reading the path from the environment instead would
+	// require t.Setenv, which panics under t.Parallel.
+
 	// G1: prepends "G1:" to the message; writes its call count to a file.
-	const srcG1Prepend = `
+	makeG1PrependSrc := func(countFile string) string {
+		return fmt.Sprintf(`
 package main
 
 import (
@@ -6457,14 +6464,13 @@ type G1Plugin struct {
 }
 
 func (p *G1Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
-	// Increment counter.
-	countFile := os.Getenv("G1_COUNT_FILE")
+	countFile := %q
 	count := 0
 	if data, err := os.ReadFile(countFile); err == nil {
 		count, _ = strconv.Atoi(strings.TrimSpace(string(data)))
 	}
 	count++
-	_ = os.WriteFile(countFile, []byte(fmt.Sprintf("%d", count)), 0644)
+	_ = os.WriteFile(countFile, []byte(fmt.Sprintf("%%d", count)), 0644)
 
 	modified := post.Clone()
 	modified.Message = "G1:" + post.Message
@@ -6474,10 +6480,12 @@ func (p *G1Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mo
 func main() {
 	plugin.ClientMain(&G1Plugin{})
 }
-`
+`, countFile)
+	}
 
 	// G1 that rejects.
-	const srcG1Reject = `
+	makeG1RejectSrc := func(countFile string) string {
+		return fmt.Sprintf(`
 package main
 
 import (
@@ -6494,23 +6502,25 @@ type G1RejectPlugin struct {
 }
 
 func (p *G1RejectPlugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
-	countFile := os.Getenv("G1_COUNT_FILE")
+	countFile := %q
 	count := 0
 	if data, err := os.ReadFile(countFile); err == nil {
 		count, _ = strconv.Atoi(strings.TrimSpace(string(data)))
 	}
 	count++
-	_ = os.WriteFile(countFile, []byte(fmt.Sprintf("%d", count)), 0644)
+	_ = os.WriteFile(countFile, []byte(fmt.Sprintf("%%d", count)), 0644)
 	return nil, "g1-rejected"
 }
 
 func main() {
 	plugin.ClientMain(&G1RejectPlugin{})
 }
-`
+`, countFile)
+	}
 
 	// G2: prepends "G2:" to the message; writes its call count to a file.
-	const srcG2 = `
+	makeG2Src := func(countFile string) string {
+		return fmt.Sprintf(`
 package main
 
 import (
@@ -6527,13 +6537,13 @@ type G2Plugin struct {
 }
 
 func (p *G2Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
-	countFile := os.Getenv("G2_COUNT_FILE")
+	countFile := %q
 	count := 0
 	if data, err := os.ReadFile(countFile); err == nil {
 		count, _ = strconv.Atoi(strings.TrimSpace(string(data)))
 	}
 	count++
-	_ = os.WriteFile(countFile, []byte(fmt.Sprintf("%d", count)), 0644)
+	_ = os.WriteFile(countFile, []byte(fmt.Sprintf("%%d", count)), 0644)
 
 	modified := post.Clone()
 	modified.Message = "G2:" + post.Message
@@ -6543,10 +6553,12 @@ func (p *G2Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*mo
 func main() {
 	plugin.ClientMain(&G2Plugin{})
 }
-`
+`, countFile)
+	}
 
 	// G3: counts in a temp file but never rejects (used as the third guard in phase-b tests).
-	const srcG3 = `
+	makeG3Src := func(countFile string) string {
+		return fmt.Sprintf(`
 package main
 
 import (
@@ -6563,23 +6575,25 @@ type G3Plugin struct {
 }
 
 func (p *G3Plugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
-	countFile := os.Getenv("G3_COUNT_FILE")
+	countFile := %q
 	count := 0
 	if data, err := os.ReadFile(countFile); err == nil {
 		count, _ = strconv.Atoi(strings.TrimSpace(string(data)))
 	}
 	count++
-	_ = os.WriteFile(countFile, []byte(fmt.Sprintf("%d", count)), 0644)
+	_ = os.WriteFile(countFile, []byte(fmt.Sprintf("%%d", count)), 0644)
 	return nil, ""
 }
 
 func main() {
 	plugin.ClientMain(&G3Plugin{})
 }
-`
+`, countFile)
+	}
 
 	// Non-guard plugin N: writes its call count to a file.
-	const srcN = `
+	makeNSrc := func(countFile string) string {
+		return fmt.Sprintf(`
 package main
 
 import (
@@ -6596,20 +6610,21 @@ type NPlugin struct {
 }
 
 func (p *NPlugin) MessageWillBePosted(c *plugin.Context, post *model.Post) (*model.Post, string) {
-	countFile := os.Getenv("N_COUNT_FILE")
+	countFile := %q
 	count := 0
 	if data, err := os.ReadFile(countFile); err == nil {
 		count, _ = strconv.Atoi(strings.TrimSpace(string(data)))
 	}
 	count++
-	_ = os.WriteFile(countFile, []byte(fmt.Sprintf("%d", count)), 0644)
+	_ = os.WriteFile(countFile, []byte(fmt.Sprintf("%%d", count)), 0644)
 	return nil, ""
 }
 
 func main() {
 	plugin.ClientMain(&NPlugin{})
 }
-`
+`, countFile)
+	}
 
 	// Helper to read a counter file.
 	readCount := func(t *testing.T, path string) int {
@@ -6638,16 +6653,13 @@ func main() {
 		g2CountFile.Close()
 		defer os.Remove(g2CountFile.Name())
 
-		t.Setenv("G1_COUNT_FILE", g1CountFile.Name())
-		t.Setenv("G2_COUNT_FILE", g2CountFile.Name())
-
-		tearDown, pluginIDs, errs := SetAppEnvironmentWithPlugins(t, []string{srcG1Prepend, srcG2}, th.App, th.NewPluginAPI)
+		tearDown, pluginIDs, errs := SetAppEnvironmentWithPlugins(t, []string{makeG1PrependSrc(g1CountFile.Name()), makeG2Src(g2CountFile.Name())}, th.App, th.NewPluginAPI)
 		defer tearDown()
 		require.Len(t, errs, 2)
 		require.NoError(t, errs[0])
 		require.NoError(t, errs[1])
 
-		// pluginIDs[0] → srcG1Prepend (prepends "G1:"), pluginIDs[1] → srcG2 (prepends "G2:").
+		// pluginIDs[0] → G1Prepend (prepends "G1:"), pluginIDs[1] → G2 (prepends "G2:").
 		// resolveGuards fires Phase B in PluginId alphabetical order. Walk the sorted IDs to
 		// predict the expected final message and assert exact equality.
 		id0, id1 := pluginIDs[0], pluginIDs[1]
@@ -6683,8 +6695,8 @@ func main() {
 	//
 	// Three guard plugins are used so that the rejecter can be in the middle of the
 	// sorted order (two plugins cannot detect a missing short-circuit: the loop ends
-	// naturally after two iterations regardless). The rejecter is srcG1Reject (pluginIDs[0]);
-	// srcG2 (pluginIDs[1]) and srcG3 (pluginIDs[2]) are plain counters. After sorting the
+	// naturally after two iterations regardless). The rejecter is G1Reject (pluginIDs[0]);
+	// G2 (pluginIDs[1]) and G3 (pluginIDs[2]) are plain counters. After sorting the
 	// three plugin IDs, any plugin whose sorted position is after the rejecter MUST have a
 	// count of 0 (Phase B short-circuited). Any plugin before the rejecter must have count 1.
 	// The rejecter itself must have count 1.
@@ -6701,15 +6713,10 @@ func main() {
 		g3CountFile.Close()
 		defer os.Remove(g3CountFile.Name())
 
-		// Set env vars BEFORE activating plugins so subprocess inherits them.
-		t.Setenv("G1_COUNT_FILE", g1CountFile.Name())
-		t.Setenv("G2_COUNT_FILE", g2CountFile.Name())
-		t.Setenv("G3_COUNT_FILE", g3CountFile.Name())
-
-		// pluginIDs[0] → srcG1Reject (rejecter, uses G1_COUNT_FILE)
-		// pluginIDs[1] → srcG2       (counter,  uses G2_COUNT_FILE)
-		// pluginIDs[2] → srcG3       (counter,  uses G3_COUNT_FILE)
-		tearDown, pluginIDs, errs := SetAppEnvironmentWithPlugins(t, []string{srcG1Reject, srcG2, srcG3}, th.App, th.NewPluginAPI)
+		// pluginIDs[0] → G1Reject (rejecter, writes to g1CountFile)
+		// pluginIDs[1] → G2       (counter,  writes to g2CountFile)
+		// pluginIDs[2] → G3       (counter,  writes to g3CountFile)
+		tearDown, pluginIDs, errs := SetAppEnvironmentWithPlugins(t, []string{makeG1RejectSrc(g1CountFile.Name()), makeG2Src(g2CountFile.Name()), makeG3Src(g3CountFile.Name())}, th.App, th.NewPluginAPI)
 		defer tearDown()
 		require.Len(t, errs, 3)
 		require.NoError(t, errs[0])
@@ -6779,11 +6786,7 @@ func main() {
 		nCountFile.Close()
 		defer os.Remove(nCountFile.Name())
 
-		t.Setenv("G1_COUNT_FILE", g1CountFile.Name())
-		t.Setenv("G2_COUNT_FILE", g2CountFile.Name())
-		t.Setenv("N_COUNT_FILE", nCountFile.Name())
-
-		tearDown, pluginIDs, errs := SetAppEnvironmentWithPlugins(t, []string{srcG1Prepend, srcG2, srcN}, th.App, th.NewPluginAPI)
+		tearDown, pluginIDs, errs := SetAppEnvironmentWithPlugins(t, []string{makeG1PrependSrc(g1CountFile.Name()), makeG2Src(g2CountFile.Name()), makeNSrc(nCountFile.Name())}, th.App, th.NewPluginAPI)
 		defer tearDown()
 		require.Len(t, errs, 3)
 		require.NoError(t, errs[0])
