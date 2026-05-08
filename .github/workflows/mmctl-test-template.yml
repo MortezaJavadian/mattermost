@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       COMPOSE_PROJECT_NAME: ghactions
+      HAS_ZEPHYR_API_KEY: ${{ secrets.MM_E2E_ZEPHYR_API_KEY != '' }}
     steps:
       - name: buildenv/docker-login
         # Only FIPS requires login for private build container. (Forks won't have credentials.)
@@ -93,7 +94,7 @@ jobs:
           docker compose --ansi never stop
 
       - name: Save mmctl test report to Zephyr Scale
-        if: ${{ always() && hashFiles('server/report.xml') != '' && github.event_name != 'pull_request' && (github.ref_name == 'master' || startsWith(github.ref_name, 'release-')) }}
+        if: ${{ always() && hashFiles('server/report.xml') != '' && github.event_name != 'pull_request' && (github.ref_name == 'master' || startsWith(github.ref_name, 'release-')) && env.HAS_ZEPHYR_API_KEY == 'true' }}
         uses: ./.github/actions/save-junit-report-tms
         with:
           report-path: server/report.xml
