@@ -1,63 +1,63 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import { isDesktopApp, isMobile } from "@mattermost/shared/utils/user_agent";
-import type { Channel, ChannelMembership } from "@mattermost/types/channels";
-import type { ServerError } from "@mattermost/types/errors";
-import { isMessageAttachmentArray } from "@mattermost/types/message_attachments";
-import type { Post } from "@mattermost/types/posts";
-import type { UserProfile } from "@mattermost/types/users";
+import {isDesktopApp, isMobile} from '@mattermost/shared/utils/user_agent';
+import type {Channel, ChannelMembership} from '@mattermost/types/channels';
+import type {ServerError} from '@mattermost/types/errors';
+import {isMessageAttachmentArray} from '@mattermost/types/message_attachments';
+import type {Post} from '@mattermost/types/posts';
+import type {UserProfile} from '@mattermost/types/users';
 
-import { logError } from "mattermost-redux/actions/errors";
-import { Client4 } from "mattermost-redux/client";
+import {logError} from 'mattermost-redux/actions/errors';
+import {Client4} from 'mattermost-redux/client';
 import {
     getCurrentChannel,
     getMyChannelMember,
     makeGetChannel,
-} from "mattermost-redux/selectors/entities/channels";
-import { getConfig } from "mattermost-redux/selectors/entities/general";
+} from 'mattermost-redux/selectors/entities/channels';
+import {getConfig} from 'mattermost-redux/selectors/entities/general';
 import {
     getTeammateNameDisplaySetting,
     isCollapsedThreadsEnabled,
-} from "mattermost-redux/selectors/entities/preferences";
-import { getAllUserMentionKeys } from "mattermost-redux/selectors/entities/search";
+} from 'mattermost-redux/selectors/entities/preferences';
+import {getAllUserMentionKeys} from 'mattermost-redux/selectors/entities/search';
 import {
     getCurrentUserId,
     getCurrentUser,
     getStatusForUserId,
     getUser,
-} from "mattermost-redux/selectors/entities/users";
-import { isChannelMuted } from "mattermost-redux/utils/channel_utils";
+} from 'mattermost-redux/selectors/entities/users';
+import {isChannelMuted} from 'mattermost-redux/utils/channel_utils';
 import {
     ensureString,
     isSystemMessage,
     isUserAddedInChannel,
-} from "mattermost-redux/utils/post_utils";
-import { displayUsername } from "mattermost-redux/utils/user_utils";
+} from 'mattermost-redux/utils/post_utils';
+import {displayUsername} from 'mattermost-redux/utils/user_utils';
 
-import { getChannelURL, getPermalinkURL } from "selectors/urls";
-import { isThreadOpen } from "selectors/views/threads";
+import {getChannelURL, getPermalinkURL} from 'selectors/urls';
+import {isThreadOpen} from 'selectors/views/threads';
 
-import { getHistory } from "utils/browser_history";
+import {getHistory} from 'utils/browser_history';
 import Constants, {
     NotificationLevels,
     UserStatuses,
     IgnoreChannelMentions,
     DesktopSound,
-} from "utils/constants";
-import DesktopApp from "utils/desktop_api";
-import { stripMarkdown, formatWithRenderer } from "utils/markdown";
-import MentionableRenderer from "utils/markdown/mentionable_renderer";
-import { DesktopNotificationSounds, ding } from "utils/notification_sounds";
-import { showNotification } from "utils/notifications";
-import { getFocusedPopoutInfo } from "utils/popouts/focus";
-import { cjkrPattern, escapeRegex } from "utils/text_formatting";
-import * as Utils from "utils/utils";
+} from 'utils/constants';
+import DesktopApp from 'utils/desktop_api';
+import {stripMarkdown, formatWithRenderer} from 'utils/markdown';
+import MentionableRenderer from 'utils/markdown/mentionable_renderer';
+import {DesktopNotificationSounds, ding} from 'utils/notification_sounds';
+import {showNotification} from 'utils/notifications';
+import {getFocusedPopoutInfo} from 'utils/popouts/focus';
+import {cjkrPattern, escapeRegex} from 'utils/text_formatting';
+import * as Utils from 'utils/utils';
 
-import type { ActionFuncAsync, GlobalState } from "types/store";
+import type {ActionFuncAsync, GlobalState} from 'types/store';
 
-import { runDesktopNotificationHooks } from "./hooks";
-import type { NewPostMessageProps } from "./new_post";
+import {runDesktopNotificationHooks} from './hooks';
+import type {NewPostMessageProps} from './new_post';
 
 type NotificationResult = {
     status: string;
@@ -95,13 +95,11 @@ export function isDesktopSoundEnabled(
     }
 
     if (soundInChannelMemberNotifyProps === DesktopSound.DEFAULT) {
-        return soundInUserNotifyProps
-            ? soundInUserNotifyProps === "true"
-            : true;
+        return soundInUserNotifyProps ? soundInUserNotifyProps === 'true' : true;
     }
 
     if (soundInUserNotifyProps) {
-        return soundInUserNotifyProps === "true";
+        return soundInUserNotifyProps === 'true';
     }
 
     return true;
@@ -145,7 +143,7 @@ export function sendDesktopNotification(
     return async (dispatch, getState) => {
         const state = getState();
 
-        const teamId = msgProps.team_id || "";
+        const teamId = msgProps.team_id || '';
 
         const channel =
             makeGetChannel()(state, post.channel_id) ||
@@ -158,7 +156,7 @@ export function sendDesktopNotification(
         const user = getCurrentUser(state);
         const member = getMyChannelMember(state, post.channel_id);
         const isCrtReply =
-            isCollapsedThreadsEnabled(state) && post.root_id !== "";
+            isCollapsedThreadsEnabled(state) && post.root_id !== '';
         const forceNotification = Boolean(post.props?.force_notification);
 
         const skipNotificationReason = shouldSkipNotification(
@@ -172,7 +170,7 @@ export function sendDesktopNotification(
             isCrtReply,
         );
         if (skipNotificationReason) {
-            return { data: skipNotificationReason };
+            return {data: skipNotificationReason};
         }
 
         const title = getNotificationTitle(channel, msgProps, isCrtReply);
@@ -183,9 +181,7 @@ export function sendDesktopNotification(
         const soundName = getDesktopNotificationSound(member, user);
 
         const updatedState = getState();
-        const url = isCrtReply
-            ? getPermalinkURL(updatedState, teamId, post.id)
-            : getChannelURL(updatedState, channel, teamId);
+        const url = isCrtReply ? getPermalinkURL(updatedState, teamId, post.id) : getChannelURL(updatedState, channel, teamId);
 
         // Allow plugins to change the notification, or re-enable a notification
         const args: NotificationHooksArgs = {
@@ -214,8 +210,8 @@ export function sendDesktopNotification(
             dispatch(logError(hookResult.error as ServerError));
             return {
                 data: {
-                    status: "error",
-                    reason: "desktop_notification_hook",
+                    status: 'error',
+                    reason: 'desktop_notification_hook',
                     data: String(hookResult.error),
                 },
             };
@@ -226,8 +222,8 @@ export function sendDesktopNotification(
         if (!argsAfterHooks.notify && !forceNotification) {
             return {
                 data: {
-                    status: "not_sent",
-                    reason: "desktop_notification_hook",
+                    status: 'not_sent',
+                    reason: 'desktop_notification_hook',
                     data: String(hookResult),
                 },
             };
@@ -255,38 +251,38 @@ export function sendDesktopNotification(
 }
 
 const getNotificationTitle = (
-    channel: Pick<Channel, "type" | "display_name">,
+    channel: Pick<Channel, 'type' | 'display_name'>,
     msgProps: NewPostMessageProps,
     isCrtReply: boolean,
 ) => {
     let title = Utils.localizeMessage({
-        id: "channel_loader.title",
-        defaultMessage: "Posted",
+        id: 'channel_loader.title',
+        defaultMessage: 'Posted',
     });
     if (channel.type === Constants.DM_CHANNEL) {
         title = Utils.localizeMessage({
-            id: "notification.dm",
-            defaultMessage: "Direct Message",
+            id: 'notification.dm',
+            defaultMessage: 'Direct Message',
         });
     } else {
         title = channel.display_name;
     }
 
-    if (title === "") {
+    if (title === '') {
         if (msgProps.channel_type === Constants.DM_CHANNEL) {
             title = Utils.localizeMessage({
-                id: "notification.dm",
-                defaultMessage: "Direct Message",
+                id: 'notification.dm',
+                defaultMessage: 'Direct Message',
             });
         } else {
-            title = msgProps.channel_display_name || "";
+            title = msgProps.channel_display_name || '';
         }
     }
 
     if (isCrtReply) {
         title = Utils.localizeMessage(
-            { id: "notification.crt", defaultMessage: "Reply in {title}" },
-            { title },
+            {id: 'notification.crt', defaultMessage: 'Reply in {title}'},
+            {title},
         );
     }
 
@@ -302,7 +298,7 @@ const getNotificationUsername = (
     const userFromPost = getUser(state, post.user_id);
 
     const overrideUsername = ensureString(post.props.override_username);
-    if (overrideUsername && config.EnablePostUsernameOverride === "true") {
+    if (overrideUsername && config.EnablePostUsernameOverride === 'true') {
         return overrideUsername;
     }
     if (userFromPost) {
@@ -316,8 +312,8 @@ const getNotificationUsername = (
         return msgProps.sender_name;
     }
     return Utils.localizeMessage({
-        id: "channel_loader.someone",
-        defaultMessage: "Someone",
+        id: 'channel_loader.someone',
+        defaultMessage: 'Someone',
     });
 };
 
@@ -330,9 +326,7 @@ const getNotificationBody = (
 
     let notifyText = post.message;
 
-    const attachments = isMessageAttachmentArray(post.props?.attachments)
-        ? post.props.attachments
-        : [];
+    const attachments = isMessageAttachmentArray(post.props?.attachments) ? post.props.attachments : [];
     let image = false;
     attachments.forEach((attachment) => {
         if (notifyText.length === 0) {
@@ -340,7 +334,7 @@ const getNotificationBody = (
                 attachment.fallback ||
                 attachment.pretext ||
                 attachment.text ||
-                "";
+                '';
         }
         image = Boolean(image || attachment.image_url?.length);
     });
@@ -351,23 +345,23 @@ const getNotificationBody = (
     if (strippedMarkdownNotifyText.length === 0) {
         if (msgProps.image) {
             body += Utils.localizeMessage({
-                id: "channel_loader.uploadedImage",
-                defaultMessage: " uploaded an image",
+                id: 'channel_loader.uploadedImage',
+                defaultMessage: ' uploaded an image',
             });
         } else if (msgProps.otherFile) {
             body += Utils.localizeMessage({
-                id: "channel_loader.uploadedFile",
-                defaultMessage: " uploaded a file",
+                id: 'channel_loader.uploadedFile',
+                defaultMessage: ' uploaded a file',
             });
         } else if (image) {
             body += Utils.localizeMessage({
-                id: "channel_loader.postedImage",
-                defaultMessage: " posted an image",
+                id: 'channel_loader.postedImage',
+                defaultMessage: ' posted an image',
             });
         } else {
             body += Utils.localizeMessage({
-                id: "channel_loader.posted",
-                defaultMessage: " posted a message",
+                id: 'channel_loader.posted',
+                defaultMessage: ' posted a message',
             });
         }
     } else {
@@ -382,22 +376,22 @@ function shouldSkipNotification(
     post: Post,
     msgProps: NewPostMessageProps,
     user: UserProfile,
-    channel: Pick<Channel, "type" | "id">,
+    channel: Pick<Channel, 'type' | 'id'>,
     member: ChannelMembership | undefined,
     skipChecks: boolean,
     isCrtReply: boolean,
 ) {
     const currentUserId = getCurrentUserId(state);
-    if (currentUserId === post.user_id && post.props.from_webhook !== "true") {
-        return { status: "not_sent", reason: "own_post" };
+    if (currentUserId === post.user_id && post.props.from_webhook !== 'true') {
+        return {status: 'not_sent', reason: 'own_post'};
     }
 
     if (isSystemMessage(post) && !isUserAddedInChannel(post, currentUserId)) {
-        return { status: "not_sent", reason: "system_message" };
+        return {status: 'not_sent', reason: 'system_message'};
     }
 
     if (!member) {
-        return { status: "error", reason: "no_member" };
+        return {status: 'error', reason: 'no_member'};
     }
 
     if (skipChecks) {
@@ -405,7 +399,7 @@ function shouldSkipNotification(
     }
 
     if (isChannelMuted(member)) {
-        return { status: "not_sent", reason: "channel_muted" };
+        return {status: 'not_sent', reason: 'channel_muted'};
     }
 
     const userStatus = getStatusForUserId(state, user.id);
@@ -413,7 +407,7 @@ function shouldSkipNotification(
         userStatus === UserStatuses.DND ||
         userStatus === UserStatuses.OUT_OF_OFFICE
     ) {
-        return { status: "not_sent", reason: "user_status", data: userStatus };
+        return {status: 'not_sent', reason: 'user_status', data: userStatus};
     }
 
     let mentions = [];
@@ -436,7 +430,7 @@ function shouldSkipNotification(
     }
 
     if (
-        channel?.type === "G" &&
+        channel?.type === 'G' &&
         channelNotifyProp === NotificationLevels.DEFAULT &&
         user?.notify_props?.desktop === NotificationLevels.MENTION
     ) {
@@ -444,9 +438,9 @@ function shouldSkipNotification(
     }
 
     if (notifyLevel === NotificationLevels.NONE) {
-        return { status: "not_sent", reason: "notify_level_none" };
+        return {status: 'not_sent', reason: 'notify_level_none'};
     } else if (
-        channel?.type === "G" &&
+        channel?.type === 'G' &&
         notifyLevel === NotificationLevels.MENTION
     ) {
         // Compose the whole text in the message, including interactive messages.
@@ -469,7 +463,7 @@ function shouldSkipNotification(
                     if (attachment.fields) {
                         for (const field of attachment.fields) {
                             appendText(field.title);
-                            if (typeof field.value === "string") {
+                            if (typeof field.value === 'string') {
                                 appendText(field.value);
                             }
                         }
@@ -479,7 +473,7 @@ function shouldSkipNotification(
         } catch (e) {
             // eslint-disable-next-line no-console
             console.log(
-                "Could not process the whole attachment for mentions",
+                'Could not process the whole attachment for mentions',
                 e,
             );
         }
@@ -492,7 +486,7 @@ function shouldSkipNotification(
         let ignoreChannelMention =
             ignoreChannelMentionProp === IgnoreChannelMentions.ON;
         if (ignoreChannelMentionProp === IgnoreChannelMentions.DEFAULT) {
-            ignoreChannelMention = user?.notify_props?.channel === "false";
+            ignoreChannelMention = user?.notify_props?.channel === 'false';
         }
 
         const mentionableText = formatWithRenderer(
@@ -507,14 +501,14 @@ function shouldSkipNotification(
 
             if (
                 ignoreChannelMention &&
-                ["@all", "@here", "@channel"].includes(mention.key)
+                ['@all', '@here', '@channel'].includes(mention.key)
             ) {
                 continue;
             }
 
-            let flags = "g";
+            let flags = 'g';
             if (!mention.caseSensitive) {
-                flags += "i";
+                flags += 'i';
             }
 
             let pattern;
@@ -539,8 +533,8 @@ function shouldSkipNotification(
 
         if (!isExplicitlyMentioned) {
             return {
-                status: "not_sent",
-                reason: "not_explicitly_mentioned",
+                status: 'not_sent',
+                reason: 'not_explicitly_mentioned',
                 data: mentionableText,
             };
         }
@@ -549,14 +543,14 @@ function shouldSkipNotification(
         mentions.indexOf(user.id) === -1 &&
         msgProps.channel_type !== Constants.DM_CHANNEL
     ) {
-        return { status: "not_sent", reason: "not_mentioned" };
+        return {status: 'not_sent', reason: 'not_mentioned'};
     } else if (
         isCrtReply &&
         notifyLevel === NotificationLevels.ALL &&
         followers.indexOf(currentUserId) === -1
     ) {
         // if user is not following the thread don't notify
-        return { status: "not_sent", reason: "not_following_thread" };
+        return {status: 'not_sent', reason: 'not_following_thread'};
     }
 
     // Notify if you're not looking in the right channel or when
@@ -569,23 +563,23 @@ function shouldSkipNotification(
         if (isCrtReply) {
             if (isThreadOpen(state, post.root_id)) {
                 return {
-                    status: "not_sent",
-                    reason: "thread_is_open",
+                    status: 'not_sent',
+                    reason: 'thread_is_open',
                     data: post.root_id,
                 };
             }
         } else if (activeChannel && activeChannel.id === channelId) {
             return {
-                status: "not_sent",
-                reason: "channel_is_open",
+                status: 'not_sent',
+                reason: 'channel_is_open',
                 data: activeChannel?.id,
             };
         }
     } else if (focusedPopout) {
         if (isCrtReply && focusedPopout.threadId === post.root_id) {
             return {
-                status: "not_sent",
-                reason: "thread_is_open",
+                status: 'not_sent',
+                reason: 'thread_is_open',
                 data: post.root_id,
             };
         }
@@ -595,8 +589,8 @@ function shouldSkipNotification(
             focusedPopout.channelId === channelId
         ) {
             return {
-                status: "not_sent",
-                reason: "channel_is_open",
+                status: 'not_sent',
+                reason: 'channel_is_open',
                 data: channelId,
             };
         }
@@ -626,7 +620,7 @@ export function notifyMe(
                 soundName,
                 url,
             );
-            return { data: result };
+            return {data: result};
         }
 
         try {
@@ -642,13 +636,13 @@ export function notifyMe(
                     },
                 }),
             );
-            return { data: result };
+            return {data: result};
         } catch (error) {
             dispatch(logError(error));
             return {
                 data: {
-                    status: "error",
-                    reason: "notification_api",
+                    status: 'error',
+                    reason: 'notification_api',
                     data: String(error),
                 },
             };
