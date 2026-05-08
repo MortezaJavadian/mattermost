@@ -27,8 +27,8 @@ func TestGetServerLimits(t *testing.T) {
 
 		// InitBasic creates 3 users by default
 		require.Equal(t, int64(3), serverLimits.ActiveUserCount)
-		require.Equal(t, int64(200), serverLimits.MaxUsersLimit)
-		require.Equal(t, int64(250), serverLimits.MaxUsersHardLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 	})
 
 	t.Run("user count should increase on creating new user and decrease on permanently deleting", func(t *testing.T) {
@@ -39,6 +39,8 @@ func TestGetServerLimits(t *testing.T) {
 		serverLimits, appErr := th.App.GetServerLimits()
 		require.Nil(t, appErr)
 		require.Equal(t, int64(3), serverLimits.ActiveUserCount)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 
 		// now we create a new user
 		newUser := th.CreateUser(t)
@@ -46,12 +48,16 @@ func TestGetServerLimits(t *testing.T) {
 		serverLimits, appErr = th.App.GetServerLimits()
 		require.Nil(t, appErr)
 		require.Equal(t, int64(4), serverLimits.ActiveUserCount)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 
 		// now we'll delete the user
 		_ = th.App.PermanentDeleteUser(th.Context, newUser)
 		serverLimits, appErr = th.App.GetServerLimits()
 		require.Nil(t, appErr)
 		require.Equal(t, int64(3), serverLimits.ActiveUserCount)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 	})
 
 	t.Run("user count should increase on creating new guest user and decrease on permanently deleting", func(t *testing.T) {
@@ -62,6 +68,8 @@ func TestGetServerLimits(t *testing.T) {
 		serverLimits, appErr := th.App.GetServerLimits()
 		require.Nil(t, appErr)
 		require.Equal(t, int64(3), serverLimits.ActiveUserCount)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 
 		// now we create a new user
 		newGuestUser := th.CreateGuest(t)
@@ -69,12 +77,16 @@ func TestGetServerLimits(t *testing.T) {
 		serverLimits, appErr = th.App.GetServerLimits()
 		require.Nil(t, appErr)
 		require.Equal(t, int64(4), serverLimits.ActiveUserCount)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 
 		// now we'll delete the user
 		_ = th.App.PermanentDeleteUser(th.Context, newGuestUser)
 		serverLimits, appErr = th.App.GetServerLimits()
 		require.Nil(t, appErr)
 		require.Equal(t, int64(3), serverLimits.ActiveUserCount)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 	})
 
 	t.Run("user count should increase on creating new user and decrease on soft deleting", func(t *testing.T) {
@@ -85,6 +97,8 @@ func TestGetServerLimits(t *testing.T) {
 		serverLimits, appErr := th.App.GetServerLimits()
 		require.Nil(t, appErr)
 		require.Equal(t, int64(3), serverLimits.ActiveUserCount)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 
 		// now we create a new user
 		newUser := th.CreateUser(t)
@@ -179,8 +193,8 @@ func TestGetServerLimits(t *testing.T) {
 
 		// InitBasic creates 3 users by default
 		require.Equal(t, int64(3), serverLimits.ActiveUserCount)
-		require.Equal(t, int64(100), serverLimits.MaxUsersLimit)
-		require.Equal(t, int64(110), serverLimits.MaxUsersHardLimit) // 100 + 10 extra users = 110
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 	})
 
 	t.Run("licensed server with seat count enforcement and no ExtraUsers configured defaults to zero", func(t *testing.T) {
@@ -198,8 +212,8 @@ func TestGetServerLimits(t *testing.T) {
 
 		// InitBasic creates 3 users by default
 		require.Equal(t, int64(3), serverLimits.ActiveUserCount)
-		require.Equal(t, int64(100), serverLimits.MaxUsersLimit)
-		require.Equal(t, int64(100), serverLimits.MaxUsersHardLimit) // 100 + 0 extra users = 100 (hard cap)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 	})
 
 	t.Run("licensed server with seat count enforcement and zero ExtraUsers creates hard cap", func(t *testing.T) {
@@ -218,8 +232,8 @@ func TestGetServerLimits(t *testing.T) {
 
 		// InitBasic creates 3 users by default
 		require.Equal(t, int64(3), serverLimits.ActiveUserCount)
-		require.Equal(t, int64(100), serverLimits.MaxUsersLimit)
-		require.Equal(t, int64(100), serverLimits.MaxUsersHardLimit) // 100 + 0 extra users = 100 (hard cap)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 	})
 
 	t.Run("licensed server with seat count enforcement but no Users feature shows no limits", func(t *testing.T) {
@@ -289,7 +303,7 @@ func TestIsAtUserLimit(t *testing.T) {
 
 			atLimit, appErr := th.App.isAtUserLimit()
 			require.Nil(t, appErr)
-			require.True(t, atLimit)
+			require.False(t, atLimit)
 		})
 
 		t.Run("above hard limit", func(t *testing.T) {
@@ -305,7 +319,7 @@ func TestIsAtUserLimit(t *testing.T) {
 
 			atLimit, appErr := th.App.isAtUserLimit()
 			require.Nil(t, appErr)
-			require.True(t, atLimit)
+			require.False(t, atLimit)
 		})
 	})
 
@@ -364,7 +378,7 @@ func TestIsAtUserLimit(t *testing.T) {
 
 			atLimit, appErr := th.App.isAtUserLimit()
 			require.Nil(t, appErr)
-			require.True(t, atLimit)
+			require.False(t, atLimit)
 		})
 
 		t.Run("above hard limit with extra users", func(t *testing.T) {
@@ -386,7 +400,7 @@ func TestIsAtUserLimit(t *testing.T) {
 
 			atLimit, appErr := th.App.isAtUserLimit()
 			require.Nil(t, appErr)
-			require.True(t, atLimit)
+			require.False(t, atLimit)
 		})
 	})
 
@@ -468,35 +482,35 @@ func TestExtraUsersBehavior(t *testing.T) {
 				licenseUserLimit:  0,
 				extraUsers:        model.NewPointer(5),
 				expectedBaseLimit: 0,
-				expectedHardLimit: 5, // 0 + 5 extra users = 5
+				expectedHardLimit: 0,
 			},
 			{
 				name:              "license with configured extra users",
 				licenseUserLimit:  10,
 				extraUsers:        model.NewPointer(2),
-				expectedBaseLimit: 10,
-				expectedHardLimit: 12, // 10 + 2 extra users = 12
+				expectedBaseLimit: 0,
+				expectedHardLimit: 0,
 			},
 			{
 				name:              "license with zero extra users (hard cap)",
 				licenseUserLimit:  100,
 				extraUsers:        model.NewPointer(0),
-				expectedBaseLimit: 100,
-				expectedHardLimit: 100, // 100 + 0 extra users = 100 (hard cap)
+				expectedBaseLimit: 0,
+				expectedHardLimit: 0,
 			},
 			{
 				name:              "license with no extra users configured defaults to zero",
 				licenseUserLimit:  100,
 				extraUsers:        nil,
-				expectedBaseLimit: 100,
-				expectedHardLimit: 100, // 100 + 0 (default) extra users = 100 (hard cap)
+				expectedBaseLimit: 0,
+				expectedHardLimit: 0,
 			},
 			{
 				name:              "license with large number of extra users",
 				licenseUserLimit:  1000,
 				extraUsers:        model.NewPointer(200),
-				expectedBaseLimit: 1000,
-				expectedHardLimit: 1200, // 1000 + 200 extra users = 1200
+				expectedBaseLimit: 0,
+				expectedHardLimit: 0,
 			},
 		}
 
@@ -528,8 +542,8 @@ func TestExtraUsersBehavior(t *testing.T) {
 		require.Nil(t, appErr)
 
 		// Unlicensed servers use hard-coded limits without extra users
-		require.Equal(t, int64(200), serverLimits.MaxUsersLimit)
-		require.Equal(t, int64(250), serverLimits.MaxUsersHardLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 	})
 }
 
@@ -609,9 +623,9 @@ func TestGetServerLimitsWithPostHistory(t *testing.T) {
 		serverLimits, appErr := th.App.GetServerLimits()
 		require.Nil(t, appErr)
 
-		// Should have proper post history limits set
-		require.Equal(t, int64(1000), serverLimits.PostHistoryLimit)
-		require.Equal(t, int64(1234567890), serverLimits.LastAccessiblePostTime)
+		// Post history is always unlimited now.
+		require.Equal(t, int64(0), serverLimits.PostHistoryLimit)
+		require.Equal(t, int64(0), serverLimits.LastAccessiblePostTime)
 		require.Equal(t, int64(5), serverLimits.ActiveUserCount)
 	})
 
@@ -637,9 +651,10 @@ func TestGetServerLimitsWithPostHistory(t *testing.T) {
 		}
 		th.App.Srv().SetLicense(license)
 
-		_, appErr := th.App.GetServerLimits()
-		require.NotNil(t, appErr)
-		require.Contains(t, appErr.Message, "Unable to find the system variable")
+		serverLimits, appErr := th.App.GetServerLimits()
+		require.Nil(t, appErr)
+		require.Equal(t, int64(0), serverLimits.PostHistoryLimit)
+		require.Equal(t, int64(0), serverLimits.LastAccessiblePostTime)
 	})
 
 	t.Run("licensed server with post history limit but no system value found", func(t *testing.T) {
@@ -667,8 +682,8 @@ func TestGetServerLimitsWithPostHistory(t *testing.T) {
 		serverLimits, appErr := th.App.GetServerLimits()
 		require.Nil(t, appErr)
 
-		// Should have post history limit set but LastAccessiblePostTime should be 0 (all posts accessible)
-		require.Equal(t, int64(1000), serverLimits.PostHistoryLimit)
+		// Post history is always unlimited now.
+		require.Equal(t, int64(0), serverLimits.PostHistoryLimit)
 		require.Equal(t, int64(0), serverLimits.LastAccessiblePostTime)
 		require.Equal(t, int64(5), serverLimits.ActiveUserCount)
 	})
@@ -749,7 +764,7 @@ func TestGetServerLimitsWithSingleChannelGuests(t *testing.T) {
 		require.Nil(t, appErr)
 
 		require.Greater(t, serverLimits.SingleChannelGuestCount, int64(0))
-		require.Equal(t, int64(userLimit), serverLimits.SingleChannelGuestLimit)
+		require.Equal(t, int64(0), serverLimits.SingleChannelGuestLimit)
 		require.Equal(t, serverLimits.ActiveUserCount, int64(4)-serverLimits.SingleChannelGuestCount)
 	})
 
@@ -816,7 +831,7 @@ func TestGetPostHistoryLimit(t *testing.T) {
 		th.App.Srv().SetLicense(license)
 
 		limit := th.App.GetPostHistoryLimit()
-		require.Equal(t, int64(1500), limit)
+		require.Equal(t, int64(0), limit)
 	})
 
 	t.Run("Entry license with PostHistory returns exact value", func(t *testing.T) {
@@ -830,6 +845,6 @@ func TestGetPostHistoryLimit(t *testing.T) {
 		th.App.Srv().SetLicense(license)
 
 		limit := th.App.GetPostHistoryLimit()
-		require.Equal(t, int64(2000), limit)
+		require.Equal(t, int64(0), limit)
 	})
 }

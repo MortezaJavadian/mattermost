@@ -28,8 +28,8 @@ func TestGetServerLimits(t *testing.T) {
 
 		// Should have full access to all limits data
 		require.Greater(t, serverLimits.ActiveUserCount, int64(0))
-		require.Equal(t, int64(200), serverLimits.MaxUsersLimit)
-		require.Equal(t, int64(250), serverLimits.MaxUsersHardLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 		require.Equal(t, int64(0), serverLimits.PostHistoryLimit)
 		require.Equal(t, int64(0), serverLimits.LastAccessiblePostTime)
 	})
@@ -60,8 +60,9 @@ func TestGetServerLimits(t *testing.T) {
 		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
 		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 
-		// But should get message history limits (needed for UI)
-		require.Equal(t, postHistoryLimit, serverLimits.PostHistoryLimit)
+		// Message history limits are removed.
+		require.Equal(t, int64(0), serverLimits.PostHistoryLimit)
+		require.Equal(t, int64(0), serverLimits.LastAccessiblePostTime)
 	})
 
 	t.Run("admin users get full limts", func(t *testing.T) {
@@ -85,13 +86,12 @@ func TestGetServerLimits(t *testing.T) {
 
 		// Should have full access to all limits data
 		require.Greater(t, serverLimits.ActiveUserCount, int64(0))
-		require.Equal(t, int64(100), serverLimits.MaxUsersLimit)
-		require.Equal(t, int64(100), serverLimits.MaxUsersHardLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
+		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 
-		// Should have post history limits
-		require.Equal(t, postHistoryLimit, serverLimits.PostHistoryLimit)
-		// LastAccessiblePostTime may be 0 if no posts exist in test database, which is expected
-		require.GreaterOrEqual(t, serverLimits.LastAccessiblePostTime, int64(0))
+		// Post history limits are removed.
+		require.Equal(t, int64(0), serverLimits.PostHistoryLimit)
+		require.Equal(t, int64(0), serverLimits.LastAccessiblePostTime)
 	})
 
 	t.Run("non-admin users get post history limits when configured", func(t *testing.T) {
@@ -118,11 +118,9 @@ func TestGetServerLimits(t *testing.T) {
 		require.Equal(t, int64(0), serverLimits.MaxUsersLimit)
 		require.Equal(t, int64(0), serverLimits.MaxUsersHardLimit)
 
-		// But should get post history limits (needed for UI)
-		require.Equal(t, postHistoryLimit, serverLimits.PostHistoryLimit)
-
-		// LastAccessiblePostTime may be 0 if no posts exist in test database, which is expected
-		require.GreaterOrEqual(t, serverLimits.LastAccessiblePostTime, int64(0))
+		// Post history limits are removed.
+		require.Equal(t, int64(0), serverLimits.PostHistoryLimit)
+		require.Equal(t, int64(0), serverLimits.LastAccessiblePostTime)
 	})
 
 	t.Run("zero post history limit shows no limits", func(t *testing.T) {
@@ -210,6 +208,6 @@ func TestGetServerLimits(t *testing.T) {
 		require.NoError(t, err)
 		CheckOKStatus(t, resp)
 
-		require.Equal(t, int64(userLimit), serverLimits.SingleChannelGuestLimit)
+		require.Equal(t, int64(0), serverLimits.SingleChannelGuestLimit)
 	})
 }

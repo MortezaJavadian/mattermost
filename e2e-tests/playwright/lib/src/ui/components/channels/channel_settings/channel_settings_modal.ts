@@ -60,6 +60,11 @@ export default class ChannelSettingsModal {
         await this.saveButton.click();
     }
 
+    async save() {
+        await expect(this.saveButton).toBeVisible();
+        await this.saveButton.click();
+    }
+
     async openInfoTab(): Promise<InfoSettings> {
         await expect(this.infoTab).toBeVisible();
         await this.infoTab.click();

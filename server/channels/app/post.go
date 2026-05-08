@@ -2044,80 +2044,13 @@ func (a *App) convertUserNameToUserIds(rctx request.CTX, usernames []string) []s
 	return usernames
 }
 
-// GetLastAccessiblePostTime returns CreateAt time(from cache) of the last accessible post as per the license limit
+// GetLastAccessiblePostTime returns 0 when post history is unlimited.
 func (a *App) GetLastAccessiblePostTime() (int64, *model.AppError) {
-	// Only calculate the last accessible post time when there are actual post history limits
-	license := a.Srv().License()
-
-	if license == nil || license.Limits == nil || license.Limits.PostHistory == 0 {
-		return 0, nil
-	}
-
-	system, err := a.Srv().Store().System().GetByName(model.SystemLastAccessiblePostTime)
-	if err != nil {
-		var nfErr *store.ErrNotFound
-		switch {
-		case errors.As(err, &nfErr):
-			// All posts are accessible
-			return 0, nil
-		default:
-			return 0, model.NewAppError("GetLastAccessiblePostTime", "app.system.get_by_name.app_error", nil, "", http.StatusInternalServerError).Wrap(err)
-		}
-	}
-
-	lastAccessiblePostTime, err := strconv.ParseInt(system.Value, 10, 64)
-	if err != nil {
-		return 0, model.NewAppError("GetLastAccessiblePostTime", "common.parse_error_int64", map[string]any{"Value": system.Value}, "", http.StatusInternalServerError).Wrap(err)
-	}
-
-	return lastAccessiblePostTime, nil
+	return 0, nil
 }
 
-// ComputeLastAccessiblePostTime updates cache with CreateAt time of the last accessible post as per the license limit.
-// Use GetLastAccessiblePostTime() to access the result.
+// ComputeLastAccessiblePostTime is a no-op when post history is unlimited.
 func (a *App) ComputeLastAccessiblePostTime() error {
-	limit := a.GetPostHistoryLimit()
-
-	if limit == 0 {
-		// All posts are accessible - we must check if a previous value was set so we can clear it
-		systemValue, err := a.Srv().Store().System().GetByName(model.SystemLastAccessiblePostTime)
-		if err != nil {
-			var nfErr *store.ErrNotFound
-			switch {
-			case errors.As(err, &nfErr):
-				// There was no previous value, nothing to do
-				return nil
-			default:
-				return model.NewAppError("ComputeLastAccessiblePostTime", "app.system.get_by_name.app_error", nil, "", http.StatusInternalServerError).Wrap(err)
-			}
-		}
-		if systemValue != nil {
-			// Previous value was set, so we must clear it
-			if _, err = a.Srv().Store().System().PermanentDeleteByName(model.SystemLastAccessiblePostTime); err != nil {
-				return model.NewAppError("ComputeLastAccessiblePostTime", "app.system.permanent_delete_by_name.app_error", nil, "", http.StatusInternalServerError).Wrap(err)
-			}
-		}
-		// Message history limit is not applicable
-		return nil
-	}
-
-	createdAt, err := a.Srv().GetStore().Post().GetNthRecentPostTime(limit)
-	if err != nil {
-		var nfErr *store.ErrNotFound
-		if !errors.As(err, &nfErr) {
-			return model.NewAppError("ComputeLastAccessiblePostTime", "app.last_accessible_post.app_error", nil, "", http.StatusInternalServerError).Wrap(err)
-		}
-	}
-
-	// Update Cache
-	err = a.Srv().Store().System().SaveOrUpdate(&model.System{
-		Name:  model.SystemLastAccessiblePostTime,
-		Value: strconv.FormatInt(createdAt, 10),
-	})
-	if err != nil {
-		return model.NewAppError("ComputeLastAccessiblePostTime", "app.system.save.app_error", nil, "", http.StatusInternalServerError).Wrap(err)
-	}
-
 	return nil
 }
 

@@ -2974,7 +2974,7 @@ func TestCountMentionsFromPost(t *testing.T) {
 		mainHelper.Parallel(t)
 		th := Setup(t).InitBasic(t)
 
-		// Create an Entry license with post history limits
+		// Keep the old limit-shaped license data, but it should no longer affect filtering.
 		license := model.NewTestLicenseSKU(model.LicenseShortSkuMattermostEntry)
 		license.Limits = &model.LicenseLimits{
 			PostHistory: 10000, // Set some post history limit to enable filtering
@@ -3019,20 +3019,19 @@ func TestCountMentionsFromPost(t *testing.T) {
 		}, channel, model.CreatePostFlags{SetOnline: true})
 		require.Nil(t, err)
 
-		// Make posts created before post3 inaccessible
+		// This cache value should now be ignored.
 		e := th.App.Srv().Store().System().SaveOrUpdate(&model.System{
 			Name:  model.SystemLastAccessiblePostTime,
 			Value: strconv.FormatInt(post3.CreateAt, 10),
 		})
 		require.NoError(t, e)
 
-		// post4 should mention the user, but since post2 is inaccessible due to the cloud plan's limit,
-		// post4 does not notify the user.
+		// post4 should still mention the user because history limits are disabled.
 
 		count, _, _, err := th.App.countMentionsFromPost(th.Context, user2, post3)
 
 		assert.Nil(t, err)
-		assert.Zero(t, count)
+		assert.Equal(t, 1, count)
 	})
 
 	t.Run("should count mentions from the user's webhook posts", func(t *testing.T) {
@@ -4288,7 +4287,7 @@ func TestGetLastAccessiblePostTime(t *testing.T) {
 	mockSystemStore.On("GetByName", mock.Anything).Return(&model.System{Name: model.SystemLastAccessiblePostTime, Value: "1234567890"}, nil)
 	r, err = th.App.GetLastAccessiblePostTime()
 	assert.Nil(t, err)
-	assert.Equal(t, int64(1234567890), r)
+	assert.Equal(t, int64(0), r)
 }
 
 func TestComputeLastAccessiblePostTime(t *testing.T) {
@@ -4302,21 +4301,13 @@ func TestComputeLastAccessiblePostTime(t *testing.T) {
 		th.App.Srv().SetLicense(entryLicensePostsLimit)
 
 		mockStore := th.App.Srv().Store().(*storemocks.Store)
-		mockPostStore := storemocks.PostStore{}
-		mockPostStore.On("GetNthRecentPostTime", int64(100)).Return(int64(1234567890), nil)
 		mockSystemStore := storemocks.SystemStore{}
-		mockSystemStore.On("SaveOrUpdate", mock.Anything).Return(nil)
-		mockStore.On("Post").Return(&mockPostStore)
 		mockStore.On("System").Return(&mockSystemStore)
 
 		err := th.App.ComputeLastAccessiblePostTime()
 		assert.NoError(t, err)
 
-		// Verify that the system value was saved with the calculated timestamp
-		mockSystemStore.AssertCalled(t, "SaveOrUpdate", &model.System{
-			Name:  model.SystemLastAccessiblePostTime,
-			Value: "1234567890",
-		})
+		mockSystemStore.AssertNotCalled(t, "SaveOrUpdate", mock.Anything)
 	})
 
 	t.Run("Remove the time if license limit is NOT applicable", func(t *testing.T) {
@@ -4329,17 +4320,13 @@ func TestComputeLastAccessiblePostTime(t *testing.T) {
 
 		mockStore := th.App.Srv().Store().(*storemocks.Store)
 		mockSystemStore := storemocks.SystemStore{}
-		mockSystemStore.On("GetByName", model.SystemLastAccessiblePostTime).Return(&model.System{Name: model.SystemLastAccessiblePostTime, Value: "1234567890"}, nil)
-		mockSystemStore.On("PermanentDeleteByName", model.SystemLastAccessiblePostTime).Return(nil, nil)
 		mockStore.On("System").Return(&mockSystemStore)
 
 		err := th.App.ComputeLastAccessiblePostTime()
 		assert.NoError(t, err)
 
-		// Verify that SaveOrUpdate was not called (no new timestamp calculated)
 		mockSystemStore.AssertNotCalled(t, "SaveOrUpdate", mock.Anything)
-		// Verify that the previous value was deleted
-		mockSystemStore.AssertCalled(t, "PermanentDeleteByName", model.SystemLastAccessiblePostTime)
+		mockSystemStore.AssertNotCalled(t, "PermanentDeleteByName", model.SystemLastAccessiblePostTime)
 	})
 }
 

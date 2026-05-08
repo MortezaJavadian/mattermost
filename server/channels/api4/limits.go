@@ -33,8 +33,8 @@ func getServerLimits(c *Context, w http.ResponseWriter, r *http.Request) {
 			ActiveUserCount:         0,
 			SingleChannelGuestCount: 0,
 			SingleChannelGuestLimit: 0,
-			LastAccessiblePostTime:  serverLimits.LastAccessiblePostTime,
-			PostHistoryLimit:        serverLimits.PostHistoryLimit,
+			LastAccessiblePostTime:  0,
+			PostHistoryLimit:        0,
 		}
 		serverLimits = limitedData
 	}
