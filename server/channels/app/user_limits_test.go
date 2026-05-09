@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/v8/channels/app/users"
 	storemocks "github.com/mattermost/mattermost/server/v8/channels/store/storetest/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -14,6 +15,18 @@ import (
 
 func TestUpdateActiveWithUserLimits(t *testing.T) {
 	mainHelper.Parallel(t)
+
+	rebindUserService := func(th *TestHelper, userStore *storemocks.UserStore) {
+		var err error
+		th.App.ch.srv.userService, err = users.New(users.ServiceConfig{
+			UserStore:    userStore,
+			SessionStore: &storemocks.SessionStore{},
+			OAuthStore:   &storemocks.OAuthStore{},
+			ConfigFn:     th.App.ch.srv.platform.Config,
+			LicenseFn:    th.App.ch.srv.License,
+		})
+		require.NoError(t, err)
+	}
 
 	t.Run("unlicensed server", func(t *testing.T) {
 		t.Run("reactivation allowed below hard limit", func(t *testing.T) {
@@ -53,6 +66,7 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			mockStore := th.App.Srv().Store().(*storemocks.Store)
 			mockStore.On("User").Return(&mockUserStore)
 			mockStore.On("Team").Return(&mockTeamStore)
+			rebindUserService(th, &mockUserStore)
 
 			// Reactivation should still succeed when user limits are disabled.
 			updatedUser, appErr := th.App.UpdateActive(th.Context, user, true)
@@ -82,6 +96,7 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			mockStore := th.App.Srv().Store().(*storemocks.Store)
 			mockStore.On("User").Return(&mockUserStore)
 			mockStore.On("Team").Return(&mockTeamStore)
+			rebindUserService(th, &mockUserStore)
 
 			// Reactivation should still succeed when user limits are disabled.
 			updatedUser, appErr := th.App.UpdateActive(th.Context, user, true)
@@ -136,6 +151,7 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			mockStore := th.App.Srv().Store().(*storemocks.Store)
 			mockStore.On("User").Return(&mockUserStore)
 			mockStore.On("Team").Return(&mockTeamStore)
+			rebindUserService(th, &mockUserStore)
 
 			// Reactivation should still succeed when user limits are disabled.
 			updatedUser, appErr := th.App.UpdateActive(th.Context, user, true)
@@ -192,6 +208,7 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			mockStore := th.App.Srv().Store().(*storemocks.Store)
 			mockStore.On("User").Return(&mockUserStore)
 			mockStore.On("Team").Return(&mockTeamStore)
+			rebindUserService(th, &mockUserStore)
 
 			// Reactivation should still succeed when user limits are disabled.
 			updatedUser, appErr := th.App.UpdateActive(th.Context, user, true)
