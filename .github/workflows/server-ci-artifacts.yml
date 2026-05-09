@@ -30,7 +30,8 @@ jobs:
       - name: compute-docker-tags
         id: meta
         run: |
-          IMAGE="ghcr.io/${{ github.repository_owner }}/mattermost-team-edition"
+          OWNER="$(printf '%s' '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          IMAGE="ghcr.io/${OWNER}/mattermost-team-edition"
           SHORT_SHA="$(echo '${{ github.event.workflow_run.head_sha }}' | cut -c1-7)"
           BRANCH="${{ github.event.workflow_run.head_branch }}"
           BRANCH_TAG="$(echo "$BRANCH" | tr '[:upper:]/' '[:lower:]-')"

@@ -11,6 +11,7 @@ on:
 jobs:
   sentry:
     name: Send build info to sentry
+    if: github.repository_owner == 'mattermost'
     runs-on: ubuntu-22.04
     env:
       SENTRY_AUTH_TOKEN: ${{ secrets.MM_SERVER_SENTRY_AUTH_TOKEN }}
