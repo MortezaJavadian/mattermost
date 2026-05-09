@@ -197,7 +197,8 @@ func TestFilterInaccessiblePosts(t *testing.T) {
 	mainHelper.Parallel(t)
 	th := Setup(t)
 
-	// Set up license with PostHistory limits to enable post filtering
+	// Post history filtering is currently a no-op. Even with limits configured,
+	// filterInaccessiblePosts should leave results unchanged.
 	cloudLicenseWithLimits := model.NewTestLicense("cloud")
 	cloudLicenseWithLimits.Limits = &model.LicenseLimits{PostHistory: 100}
 	th.App.Srv().SetLicense(cloudLicenseWithLimits)
@@ -228,17 +229,21 @@ func TestFilterInaccessiblePosts(t *testing.T) {
 		require.Nil(t, appErr)
 
 		assert.Equal(t, map[string]*model.Post{
+			"post_a": postFromCreateAt(0),
+			"post_b": postFromCreateAt(1),
 			"post_c": postFromCreateAt(2),
 			"post_d": postFromCreateAt(3),
 			"post_e": postFromCreateAt(4),
 		}, postList.Posts)
 
 		assert.Equal(t, []string{
+			"post_a",
+			"post_b",
 			"post_c",
 			"post_d",
 			"post_e",
 		}, postList.Order)
-		assert.Equal(t, int64(1), postList.FirstInaccessiblePostTime)
+		assert.Equal(t, int64(0), postList.FirstInaccessiblePostTime)
 	})
 
 	t.Run("descending order returns correct posts", func(t *testing.T) {
@@ -257,6 +262,8 @@ func TestFilterInaccessiblePosts(t *testing.T) {
 		require.Nil(t, appErr)
 
 		assert.Equal(t, map[string]*model.Post{
+			"post_a": postFromCreateAt(0),
+			"post_b": postFromCreateAt(1),
 			"post_c": postFromCreateAt(2),
 			"post_d": postFromCreateAt(3),
 			"post_e": postFromCreateAt(4),
@@ -266,9 +273,11 @@ func TestFilterInaccessiblePosts(t *testing.T) {
 			"post_e",
 			"post_d",
 			"post_c",
+			"post_b",
+			"post_a",
 		}, postList.Order)
 
-		assert.Equal(t, int64(1), postList.FirstInaccessiblePostTime)
+		assert.Equal(t, int64(0), postList.FirstInaccessiblePostTime)
 	})
 
 	t.Run("handles mixed create at ordering correctly if correct options given", func(t *testing.T) {
@@ -287,6 +296,8 @@ func TestFilterInaccessiblePosts(t *testing.T) {
 		require.Nil(t, appErr)
 
 		assert.Equal(t, map[string]*model.Post{
+			"post_a": postFromCreateAt(0),
+			"post_b": postFromCreateAt(1),
 			"post_c": postFromCreateAt(2),
 			"post_d": postFromCreateAt(3),
 			"post_e": postFromCreateAt(4),
@@ -294,6 +305,8 @@ func TestFilterInaccessiblePosts(t *testing.T) {
 
 		assert.Equal(t, []string{
 			"post_e",
+			"post_b",
+			"post_a",
 			"post_d",
 			"post_c",
 		}, postList.Order)
@@ -315,13 +328,18 @@ func TestFilterInaccessiblePosts(t *testing.T) {
 		require.Nil(t, appErr)
 
 		assert.Equal(t, map[string]*model.Post{
+			"post_a": postFromCreateAt(0),
+			"post_b": postFromCreateAt(1),
+			"post_c": postFromCreateAt(1),
 			"post_d": postFromCreateAt(3),
 			"post_e": postFromCreateAt(4),
 		}, postList.Posts)
 
 		assert.Equal(t, []string{
 			"post_e",
+			"post_a",
 			"post_d",
+			"post_b",
 		}, postList.Order)
 	})
 }
@@ -349,8 +367,8 @@ func TestGetFilteredAccessiblePosts(t *testing.T) {
 		filteredPosts, firstInaccessiblePostTime, appErr := th.App.getFilteredAccessiblePosts(posts, filterPostOptions{assumeSortedCreatedAt: true})
 
 		assert.Nil(t, appErr)
-		assert.Equal(t, []*model.Post{postFromCreateAt(2), postFromCreateAt(3), postFromCreateAt(4)}, filteredPosts)
-		assert.Equal(t, int64(1), firstInaccessiblePostTime)
+		assert.Equal(t, []*model.Post{postFromCreateAt(0), postFromCreateAt(1), postFromCreateAt(2), postFromCreateAt(3), postFromCreateAt(4)}, filteredPosts)
+		assert.Equal(t, int64(0), firstInaccessiblePostTime)
 	})
 
 	t.Run("descending order returns correct posts", func(t *testing.T) {
@@ -358,8 +376,8 @@ func TestGetFilteredAccessiblePosts(t *testing.T) {
 		filteredPosts, firstInaccessiblePostTime, appErr := th.App.getFilteredAccessiblePosts(posts, filterPostOptions{assumeSortedCreatedAt: true})
 
 		assert.Nil(t, appErr)
-		assert.Equal(t, []*model.Post{postFromCreateAt(4), postFromCreateAt(3), postFromCreateAt(2)}, filteredPosts)
-		assert.Equal(t, int64(1), firstInaccessiblePostTime)
+		assert.Equal(t, []*model.Post{postFromCreateAt(4), postFromCreateAt(3), postFromCreateAt(2), postFromCreateAt(1), postFromCreateAt(0)}, filteredPosts)
+		assert.Equal(t, int64(0), firstInaccessiblePostTime)
 	})
 
 	t.Run("handles mixed create at ordering correctly if correct options given", func(t *testing.T) {
@@ -367,7 +385,7 @@ func TestGetFilteredAccessiblePosts(t *testing.T) {
 		filteredPosts, _, appErr := th.App.getFilteredAccessiblePosts(posts, filterPostOptions{assumeSortedCreatedAt: false})
 
 		assert.Nil(t, appErr)
-		assert.Equal(t, []*model.Post{postFromCreateAt(4), postFromCreateAt(3), postFromCreateAt(2)}, filteredPosts)
+		assert.Equal(t, []*model.Post{postFromCreateAt(4), postFromCreateAt(1), postFromCreateAt(0), postFromCreateAt(3), postFromCreateAt(2)}, filteredPosts)
 	})
 }
 
@@ -394,7 +412,7 @@ func TestIsInaccessiblePost(t *testing.T) {
 	post = &model.Post{CreateAt: 1}
 	firstInaccessiblePostTime, appErr = th.App.isInaccessiblePost(post)
 	assert.Nil(t, appErr)
-	assert.Equal(t, int64(1), firstInaccessiblePostTime)
+	assert.Equal(t, int64(0), firstInaccessiblePostTime)
 }
 
 func Test_getInaccessibleRange(t *testing.T) {

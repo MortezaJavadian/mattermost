@@ -46,7 +46,7 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 
 			// Mock user count at hard limit
 			mockUserStore := storemocks.UserStore{}
-			mockUserStore.On("Count", mock.Anything).Return(int64(5000), nil).Twice() // Called in isAtUserLimit and post-update GetServerLimits
+			mockUserStore.On("Count", mock.Anything).Return(int64(5000), nil)
 			mockUserStore.On("Update", mock.Anything, mock.Anything, true).Return(&model.UserUpdate{New: user}, nil)
 			mockTeamStore := storemocks.TeamStore{}
 			mockTeamStore.On("GetTeamsByUserId", user.Id).Return([]*model.Team{}, nil)
@@ -75,7 +75,7 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 
 			// Mock user count to exceed hard limit
 			mockUserStore := storemocks.UserStore{}
-			mockUserStore.On("Count", mock.Anything).Return(int64(6000), nil).Twice() // Called in isAtUserLimit and post-update GetServerLimits
+			mockUserStore.On("Count", mock.Anything).Return(int64(6000), nil)
 			mockUserStore.On("Update", mock.Anything, mock.Anything, true).Return(&model.UserUpdate{New: user}, nil)
 			mockTeamStore := storemocks.TeamStore{}
 			mockTeamStore.On("GetTeamsByUserId", user.Id).Return([]*model.Team{}, nil)
@@ -129,7 +129,7 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 
 			// Mock user count at grace limit (105 = 100 + 5% grace period)
 			mockUserStore := storemocks.UserStore{}
-			mockUserStore.On("Count", mock.Anything).Return(int64(105), nil).Twice() // Called in isAtUserLimit and post-update GetServerLimits
+			mockUserStore.On("Count", mock.Anything).Return(int64(105), nil)
 			mockUserStore.On("Update", mock.Anything, mock.Anything, true).Return(&model.UserUpdate{New: user}, nil)
 			mockTeamStore := storemocks.TeamStore{}
 			mockTeamStore.On("GetTeamsByUserId", user.Id).Return([]*model.Team{}, nil)
@@ -185,7 +185,7 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 
 			// Mock user count above grace limit (106 > 105 grace limit)
 			mockUserStore := storemocks.UserStore{}
-			mockUserStore.On("Count", mock.Anything).Return(int64(106), nil).Twice() // Called in isAtUserLimit and post-update GetServerLimits
+			mockUserStore.On("Count", mock.Anything).Return(int64(106), nil)
 			mockUserStore.On("Update", mock.Anything, mock.Anything, true).Return(&model.UserUpdate{New: user}, nil)
 			mockTeamStore := storemocks.TeamStore{}
 			mockTeamStore.On("GetTeamsByUserId", user.Id).Return([]*model.Team{}, nil)
