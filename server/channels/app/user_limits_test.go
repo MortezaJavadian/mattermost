@@ -28,6 +28,13 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	setupCacheInvalidationMocks := func(th *TestHelper, userStore *storemocks.UserStore, channelStore *storemocks.ChannelStore, userID string) {
+		mockStore := th.App.Srv().Store().(*storemocks.Store)
+		mockStore.On("Channel").Return(channelStore)
+		userStore.On("InvalidateProfilesInChannelCacheByUser", userID).Return()
+		userStore.On("InvalidateProfileCacheForUser", userID).Return()
+	}
+
 	t.Run("unlicensed server", func(t *testing.T) {
 		t.Run("reactivation allowed below hard limit", func(t *testing.T) {
 			th := Setup(t).InitBasic(t)
@@ -61,10 +68,13 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			mockUserStore := storemocks.UserStore{}
 			mockUserStore.On("Count", mock.Anything).Return(int64(5000), nil)
 			mockUserStore.On("Update", mock.Anything, mock.Anything, true).Return(&model.UserUpdate{New: user}, nil)
+			mockChannelStore := storemocks.ChannelStore{}
+			mockChannelStore.On("InvalidateAllChannelMembersForUser", user.Id).Return()
 			mockTeamStore := storemocks.TeamStore{}
 			mockTeamStore.On("GetTeamsByUserId", user.Id).Return([]*model.Team{}, nil)
 			mockStore := th.App.Srv().Store().(*storemocks.Store)
 			mockStore.On("User").Return(&mockUserStore)
+			setupCacheInvalidationMocks(th, &mockUserStore, &mockChannelStore, user.Id)
 			mockStore.On("Team").Return(&mockTeamStore)
 			rebindUserService(th, &mockUserStore)
 
@@ -91,10 +101,13 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			mockUserStore := storemocks.UserStore{}
 			mockUserStore.On("Count", mock.Anything).Return(int64(6000), nil)
 			mockUserStore.On("Update", mock.Anything, mock.Anything, true).Return(&model.UserUpdate{New: user}, nil)
+			mockChannelStore := storemocks.ChannelStore{}
+			mockChannelStore.On("InvalidateAllChannelMembersForUser", user.Id).Return()
 			mockTeamStore := storemocks.TeamStore{}
 			mockTeamStore.On("GetTeamsByUserId", user.Id).Return([]*model.Team{}, nil)
 			mockStore := th.App.Srv().Store().(*storemocks.Store)
 			mockStore.On("User").Return(&mockUserStore)
+			setupCacheInvalidationMocks(th, &mockUserStore, &mockChannelStore, user.Id)
 			mockStore.On("Team").Return(&mockTeamStore)
 			rebindUserService(th, &mockUserStore)
 
@@ -146,10 +159,13 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			mockUserStore := storemocks.UserStore{}
 			mockUserStore.On("Count", mock.Anything).Return(int64(105), nil)
 			mockUserStore.On("Update", mock.Anything, mock.Anything, true).Return(&model.UserUpdate{New: user}, nil)
+			mockChannelStore := storemocks.ChannelStore{}
+			mockChannelStore.On("InvalidateAllChannelMembersForUser", user.Id).Return()
 			mockTeamStore := storemocks.TeamStore{}
 			mockTeamStore.On("GetTeamsByUserId", user.Id).Return([]*model.Team{}, nil)
 			mockStore := th.App.Srv().Store().(*storemocks.Store)
 			mockStore.On("User").Return(&mockUserStore)
+			setupCacheInvalidationMocks(th, &mockUserStore, &mockChannelStore, user.Id)
 			mockStore.On("Team").Return(&mockTeamStore)
 			rebindUserService(th, &mockUserStore)
 
@@ -203,10 +219,13 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			mockUserStore := storemocks.UserStore{}
 			mockUserStore.On("Count", mock.Anything).Return(int64(106), nil)
 			mockUserStore.On("Update", mock.Anything, mock.Anything, true).Return(&model.UserUpdate{New: user}, nil)
+			mockChannelStore := storemocks.ChannelStore{}
+			mockChannelStore.On("InvalidateAllChannelMembersForUser", user.Id).Return()
 			mockTeamStore := storemocks.TeamStore{}
 			mockTeamStore.On("GetTeamsByUserId", user.Id).Return([]*model.Team{}, nil)
 			mockStore := th.App.Srv().Store().(*storemocks.Store)
 			mockStore.On("User").Return(&mockUserStore)
+			setupCacheInvalidationMocks(th, &mockUserStore, &mockChannelStore, user.Id)
 			mockStore.On("Team").Return(&mockTeamStore)
 			rebindUserService(th, &mockUserStore)
 
