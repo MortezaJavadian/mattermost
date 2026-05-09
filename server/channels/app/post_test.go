@@ -4274,12 +4274,13 @@ func TestGetLastAccessiblePostTime(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, int64(0), r)
 
-	// Test case 2: Database error - should return error
+	// Test case 2: Database error is ignored while post history is unlimited
 	mockSystemStore = storemocks.SystemStore{}
 	mockStore.On("System").Return(&mockSystemStore)
 	mockSystemStore.On("GetByName", mock.Anything).Return(nil, errors.New("database error"))
-	_, err = th.App.GetLastAccessiblePostTime()
-	assert.NotNil(t, err)
+	r, err = th.App.GetLastAccessiblePostTime()
+	assert.Nil(t, err)
+	assert.Equal(t, int64(0), r)
 
 	// Test case 3: Valid system value found - should return parsed timestamp
 	mockSystemStore = storemocks.SystemStore{}
