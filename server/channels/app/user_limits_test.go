@@ -32,42 +32,40 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			require.Equal(t, int64(0), updatedUser.DeleteAt)
 		})
 
-		t.Run("reactivation blocked at hard limit", func(t *testing.T) {
+		t.Run("reactivation allowed at previous hard limit", func(t *testing.T) {
 			th := SetupWithStoreMock(t)
 
 			th.App.Srv().SetLicense(nil)
+
+			user := &model.User{
+				Id:       model.NewId(),
+				Email:    "test@example.com",
+				Username: "testuser",
+				DeleteAt: model.GetMillis(),
+			}
 
 			// Mock user count at hard limit
 			mockUserStore := storemocks.UserStore{}
 			mockUserStore.On("Count", mock.Anything).Return(int64(5000), nil) // At 5000 hard limit
+			mockUserStore.On("Update", mock.Anything, mock.Anything, true).Return(&model.UserUpdate{New: user}, nil)
+			mockTeamStore := storemocks.TeamStore{}
+			mockTeamStore.On("GetTeamsByUserId", user.Id).Return([]*model.Team{}, nil)
 			mockStore := th.App.Srv().Store().(*storemocks.Store)
 			mockStore.On("User").Return(&mockUserStore)
+			mockStore.On("Team").Return(&mockTeamStore)
 
-			user := &model.User{
-				Id:       model.NewId(),
-				Email:    "test@example.com",
-				Username: "testuser",
-				DeleteAt: model.GetMillis(),
-			}
-
-			// Try to reactivate user (should fail)
+			// Reactivation should still succeed when user limits are disabled.
 			updatedUser, appErr := th.App.UpdateActive(th.Context, user, true)
-			require.NotNil(t, appErr)
-			require.Nil(t, updatedUser)
-			require.Equal(t, "app.user.update_active.user_limit.exceeded", appErr.Id)
+			require.Nil(t, appErr)
+			require.NotNil(t, updatedUser)
+			require.Equal(t, int64(0), updatedUser.DeleteAt)
 		})
 
-		t.Run("reactivation blocked above hard limit", func(t *testing.T) {
+		t.Run("reactivation allowed above previous hard limit", func(t *testing.T) {
 			th := SetupWithStoreMock(t)
 
 			th.App.Srv().SetLicense(nil)
 
-			// Mock user count to exceed hard limit
-			mockUserStore := storemocks.UserStore{}
-			mockUserStore.On("Count", mock.Anything).Return(int64(6000), nil) // Over 5000 hard limit
-			mockStore := th.App.Srv().Store().(*storemocks.Store)
-			mockStore.On("User").Return(&mockUserStore)
-
 			user := &model.User{
 				Id:       model.NewId(),
 				Email:    "test@example.com",
@@ -75,11 +73,21 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 				DeleteAt: model.GetMillis(),
 			}
 
-			// Try to reactivate user (should fail)
+			// Mock user count to exceed hard limit
+			mockUserStore := storemocks.UserStore{}
+			mockUserStore.On("Count", mock.Anything).Return(int64(6000), nil) // Over 5000 hard limit
+			mockUserStore.On("Update", mock.Anything, mock.Anything, true).Return(&model.UserUpdate{New: user}, nil)
+			mockTeamStore := storemocks.TeamStore{}
+			mockTeamStore.On("GetTeamsByUserId", user.Id).Return([]*model.Team{}, nil)
+			mockStore := th.App.Srv().Store().(*storemocks.Store)
+			mockStore.On("User").Return(&mockUserStore)
+			mockStore.On("Team").Return(&mockTeamStore)
+
+			// Reactivation should still succeed when user limits are disabled.
 			updatedUser, appErr := th.App.UpdateActive(th.Context, user, true)
-			require.NotNil(t, appErr)
-			require.Nil(t, updatedUser)
-			require.Equal(t, "app.user.update_active.user_limit.exceeded", appErr.Id)
+			require.Nil(t, appErr)
+			require.NotNil(t, updatedUser)
+			require.Equal(t, int64(0), updatedUser.DeleteAt)
 		})
 	})
 
@@ -103,7 +111,7 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			require.Equal(t, int64(0), updatedUser.DeleteAt)
 		})
 
-		t.Run("reactivation blocked at grace limit", func(t *testing.T) {
+		t.Run("reactivation allowed at previous grace limit", func(t *testing.T) {
 			th := SetupWithStoreMock(t)
 
 			userLimit := 100
@@ -112,12 +120,6 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			license.Features.Users = &userLimit
 			th.App.Srv().SetLicense(license)
 
-			// Mock user count at grace limit (105 = 100 + 5% grace period)
-			mockUserStore := storemocks.UserStore{}
-			mockUserStore.On("Count", mock.Anything).Return(int64(105), nil) // At grace limit
-			mockStore := th.App.Srv().Store().(*storemocks.Store)
-			mockStore.On("User").Return(&mockUserStore)
-
 			user := &model.User{
 				Id:       model.NewId(),
 				Email:    "test@example.com",
@@ -125,11 +127,21 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 				DeleteAt: model.GetMillis(),
 			}
 
-			// Try to reactivate user (should fail)
+			// Mock user count at grace limit (105 = 100 + 5% grace period)
+			mockUserStore := storemocks.UserStore{}
+			mockUserStore.On("Count", mock.Anything).Return(int64(105), nil) // At grace limit
+			mockUserStore.On("Update", mock.Anything, mock.Anything, true).Return(&model.UserUpdate{New: user}, nil)
+			mockTeamStore := storemocks.TeamStore{}
+			mockTeamStore.On("GetTeamsByUserId", user.Id).Return([]*model.Team{}, nil)
+			mockStore := th.App.Srv().Store().(*storemocks.Store)
+			mockStore.On("User").Return(&mockUserStore)
+			mockStore.On("Team").Return(&mockTeamStore)
+
+			// Reactivation should still succeed when user limits are disabled.
 			updatedUser, appErr := th.App.UpdateActive(th.Context, user, true)
-			require.NotNil(t, appErr)
-			require.Nil(t, updatedUser)
-			require.Equal(t, "app.user.update_active.license_user_limit.exceeded", appErr.Id)
+			require.Nil(t, appErr)
+			require.NotNil(t, updatedUser)
+			require.Equal(t, int64(0), updatedUser.DeleteAt)
 		})
 
 		t.Run("reactivation allowed at base limit but below grace limit", func(t *testing.T) {
@@ -155,7 +167,7 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			require.Equal(t, int64(0), updatedUser.DeleteAt)
 		})
 
-		t.Run("reactivation blocked above grace limit", func(t *testing.T) {
+		t.Run("reactivation allowed above previous grace limit", func(t *testing.T) {
 			th := SetupWithStoreMock(t)
 
 			userLimit := 100
@@ -164,12 +176,6 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 			license.Features.Users = &userLimit
 			th.App.Srv().SetLicense(license)
 
-			// Mock user count above grace limit (106 > 105 grace limit)
-			mockUserStore := storemocks.UserStore{}
-			mockUserStore.On("Count", mock.Anything).Return(int64(106), nil) // Above grace limit
-			mockStore := th.App.Srv().Store().(*storemocks.Store)
-			mockStore.On("User").Return(&mockUserStore)
-
 			user := &model.User{
 				Id:       model.NewId(),
 				Email:    "test@example.com",
@@ -177,11 +183,21 @@ func TestUpdateActiveWithUserLimits(t *testing.T) {
 				DeleteAt: model.GetMillis(),
 			}
 
-			// Try to reactivate user (should fail)
+			// Mock user count above grace limit (106 > 105 grace limit)
+			mockUserStore := storemocks.UserStore{}
+			mockUserStore.On("Count", mock.Anything).Return(int64(106), nil) // Above grace limit
+			mockUserStore.On("Update", mock.Anything, mock.Anything, true).Return(&model.UserUpdate{New: user}, nil)
+			mockTeamStore := storemocks.TeamStore{}
+			mockTeamStore.On("GetTeamsByUserId", user.Id).Return([]*model.Team{}, nil)
+			mockStore := th.App.Srv().Store().(*storemocks.Store)
+			mockStore.On("User").Return(&mockUserStore)
+			mockStore.On("Team").Return(&mockTeamStore)
+
+			// Reactivation should still succeed when user limits are disabled.
 			updatedUser, appErr := th.App.UpdateActive(th.Context, user, true)
-			require.NotNil(t, appErr)
-			require.Nil(t, updatedUser)
-			require.Equal(t, "app.user.update_active.license_user_limit.exceeded", appErr.Id)
+			require.Nil(t, appErr)
+			require.NotNil(t, updatedUser)
+			require.Equal(t, int64(0), updatedUser.DeleteAt)
 		})
 	})
 
@@ -290,7 +306,7 @@ func TestCreateUserOrGuestSeatCountEnforcement(t *testing.T) {
 		require.Equal(t, "username_123", createdUser.Username)
 	})
 
-	t.Run("seat count enforced - blocks user creation when at limit", func(t *testing.T) {
+	t.Run("seat count enforced - allows user creation at previous limit", func(t *testing.T) {
 		th := Setup(t).InitBasic(t)
 
 		userLimit := 5
@@ -307,7 +323,7 @@ func TestCreateUserOrGuestSeatCountEnforcement(t *testing.T) {
 		th.CreateUser(t)
 		th.CreateUser(t)
 
-		// Now at hard limit - attempting to create another user should fail
+		// Limit enforcement is disabled, so user creation should still succeed.
 		user := &model.User{
 			Email:         "TestSeatCount@example.com",
 			Username:      "seat_test_user",
@@ -316,29 +332,16 @@ func TestCreateUserOrGuestSeatCountEnforcement(t *testing.T) {
 		}
 
 		createdUser, appErr := th.App.createUserOrGuest(th.Context, user, false)
-		require.NotNil(t, appErr)
-		require.Nil(t, createdUser)
-		require.Equal(t, "api.user.create_user.license_user_limits.exceeded", appErr.Id)
+		require.Nil(t, appErr)
+		require.NotNil(t, createdUser)
+		require.Equal(t, "seat_test_user", createdUser.Username)
 	})
 
-	t.Run("seat count enforced - blocks user creation when over limit", func(t *testing.T) {
-		// Use mocks for this test since we can't actually create users beyond the safety limit
-		th := SetupWithStoreMock(t)
+	t.Run("seat count enforced - allows user creation over previous limit", func(t *testing.T) {
+		th := Setup(t).InitBasic(t)
 
 		userLimit := 5
 		extraUsers := 0
-		currentUserCount := int64(6) // Over limit (limit=5, hard limit=5+0=5, current=6)
-
-		mockUserStore := storemocks.UserStore{}
-		mockUserStore.On("Count", mock.Anything).Return(currentUserCount, nil)
-		mockUserStore.On("IsEmpty", true).Return(false, nil)
-
-		mockGroupStore := storemocks.GroupStore{}
-		mockGroupStore.On("GetByName", "seat_test_user", mock.Anything).Return(nil, nil)
-
-		mockStore := th.App.Srv().Store().(*storemocks.Store)
-		mockStore.On("User").Return(&mockUserStore)
-		mockStore.On("Group").Return(&mockGroupStore)
 
 		license := model.NewTestLicense("")
 		license.IsSeatCountEnforced = true
@@ -346,6 +349,11 @@ func TestCreateUserOrGuestSeatCountEnforcement(t *testing.T) {
 		license.ExtraUsers = &extraUsers
 		th.App.Srv().SetLicense(license)
 
+		// Go above the previous hard limit (5).
+		th.CreateUser(t)
+		th.CreateUser(t)
+		th.CreateUser(t)
+
 		user := &model.User{
 			Email:         "TestSeatCount@example.com",
 			Username:      "seat_test_user",
@@ -354,9 +362,9 @@ func TestCreateUserOrGuestSeatCountEnforcement(t *testing.T) {
 		}
 
 		createdUser, appErr := th.App.createUserOrGuest(th.Context, user, false)
-		require.NotNil(t, appErr)
-		require.Nil(t, createdUser)
-		require.Equal(t, "api.user.create_user.license_user_limits.exceeded", appErr.Id)
+		require.Nil(t, appErr)
+		require.NotNil(t, createdUser)
+		require.Equal(t, "seat_test_user", createdUser.Username)
 	})
 
 	t.Run("seat count not enforced - allows user creation even when over limit", func(t *testing.T) {
@@ -428,7 +436,7 @@ func TestCreateUserOrGuestSeatCountEnforcement(t *testing.T) {
 		require.Equal(t, "seat_test_user", createdUser.Username)
 	})
 
-	t.Run("guest creation with seat count enforcement - blocks when at limit", func(t *testing.T) {
+	t.Run("guest creation with seat count enforcement - allows at previous limit", func(t *testing.T) {
 		th := Setup(t).InitBasic(t)
 
 		userLimit := 5
@@ -445,7 +453,7 @@ func TestCreateUserOrGuestSeatCountEnforcement(t *testing.T) {
 		th.CreateUser(t)
 		th.CreateUser(t)
 
-		// Now at hard limit - attempting to create a guest should fail
+		// Limit enforcement is disabled, so guest creation should still succeed.
 		user := &model.User{
 			Email:         "TestSeatCountGuest@example.com",
 			Username:      "seat_test_guest",
@@ -454,9 +462,9 @@ func TestCreateUserOrGuestSeatCountEnforcement(t *testing.T) {
 		}
 
 		createdUser, appErr := th.App.createUserOrGuest(th.Context, user, true)
-		require.NotNil(t, appErr)
-		require.Nil(t, createdUser)
-		require.Equal(t, "api.user.create_user.license_user_limits.exceeded", appErr.Id)
+		require.Nil(t, appErr)
+		require.NotNil(t, createdUser)
+		require.Equal(t, "seat_test_guest", createdUser.Username)
 	})
 
 	t.Run("guest creation with seat count enforcement - allows when under limit", func(t *testing.T) {
