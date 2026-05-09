@@ -51,10 +51,10 @@ on:
         type: number
         default: 1
       runner:
-        description: "GitHub-hosted runner label (default: ubuntu-latest-8-cores)"
+        description: "GitHub-hosted runner label (default: ubuntu-22.04)"
         required: false
         type: string
-        default: "ubuntu-latest-8-cores"
+        default: "ubuntu-22.04"
       race-enabled:
         description: "Run tests with Go race detector (-race)"
         required: false
@@ -250,4 +250,3 @@ jobs:
             server/cover.out
             server/test-name
             server/pr-number
-
