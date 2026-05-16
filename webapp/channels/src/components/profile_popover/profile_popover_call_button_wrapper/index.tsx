@@ -1,25 +1,29 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import React from 'react';
-import {useIntl} from 'react-intl';
-import {useSelector} from 'react-redux';
+import React from "react";
+import { useIntl } from "react-intl";
+import { useSelector } from "react-redux";
 
-import {WithTooltip} from '@mattermost/shared/components/tooltip';
+import { WithTooltip } from "@mattermost/shared/components/tooltip";
 
-import {getChannelByName} from 'mattermost-redux/selectors/entities/channels';
+import { getChannelByName } from "mattermost-redux/selectors/entities/channels";
+import { getUser } from "mattermost-redux/selectors/entities/users";
+import { isSystemAdmin } from "mattermost-redux/utils/user_utils";
 
 import {
     isCallsEnabled as getIsCallsEnabled,
     getSessionsInCalls,
+    getCallsConfig,
     callsChannelExplicitlyDisabled,
-} from 'selectors/calls';
+    callsChannelExplicitlyEnabled,
+} from "selectors/calls";
 
-import ProfilePopoverCallButton from 'components/profile_popover/profile_popover_calls_button';
+import ProfilePopoverCallButton from "components/profile_popover/profile_popover_calls_button";
 
-import {getDirectChannelName} from 'utils/utils';
+import { getDirectChannelName } from "utils/utils";
 
-import type {GlobalState} from 'types/store';
+import type { GlobalState } from "types/store";
 
 type Props = {
     userId: string;
@@ -31,7 +35,7 @@ type Props = {
 export function isUserInCall(
     state: GlobalState,
     userId: string,
-    channelId: string,
+    channelId: string
 ) {
     const sessionsInCall = getSessionsInCalls(state)[channelId] || {};
 
@@ -44,19 +48,19 @@ export function isUserInCall(
     return false;
 }
 
-const CallButton = ({userId, currentUserId, fullname, username}: Props) => {
-    const {formatMessage} = useIntl();
+const CallButton = ({ userId, currentUserId, fullname, username }: Props) => {
+    const { formatMessage } = useIntl();
 
     const isCallsEnabled = useSelector((state: GlobalState) =>
-        getIsCallsEnabled(state),
+        getIsCallsEnabled(state)
     );
     const dmChannel = useSelector((state: GlobalState) =>
-        getChannelByName(state, getDirectChannelName(currentUserId, userId)),
+        getChannelByName(state, getDirectChannelName(currentUserId, userId))
     );
     const isCallsPluginEnabledInState = useSelector((state: GlobalState) => {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
-        return state['plugins-com.mattermost.calls']?.enabled !== false;
+        return state["plugins-com.mattermost.calls"]?.enabled !== false;
     });
 
     const shouldRenderButton = useSelector((state: GlobalState) => {
@@ -66,11 +70,26 @@ const CallButton = ({userId, currentUserId, fullname, username}: Props) => {
         }
 
         // 2. No one should get the button if calls in channel have been explicitly disabled in the DM channel.
-        if (callsChannelExplicitlyDisabled(state, dmChannel?.id ?? '')) {
+        if (callsChannelExplicitlyDisabled(state, dmChannel?.id ?? "")) {
             return false;
         }
 
-        return true;
+        // 3. Admins should always see the button unless channel calls are explicitly disabled.
+        if (isSystemAdmin(getUser(state, currentUserId)?.roles)) {
+            return true;
+        }
+
+        // 4. Regular users can see the button when calls are enabled by default.
+        if (getCallsConfig(state).DefaultEnabled) {
+            return true;
+        }
+
+        // 5. Regular users can also see the button when calls are explicitly enabled in this DM channel.
+        if (callsChannelExplicitlyEnabled(state, dmChannel?.id ?? "")) {
+            return true;
+        }
+
+        return false;
     });
 
     const hasDMCall = useSelector((state: GlobalState) => {
@@ -89,29 +108,28 @@ const CallButton = ({userId, currentUserId, fullname, username}: Props) => {
 
     // We disable the button if there's already a call ongoing with the user.
     const disabled = hasDMCall;
-    const startCallMessage = hasDMCall ? formatMessage(
-        {
-            id: 'user_profile.call.ongoing',
-            defaultMessage: 'Call with {user} is ongoing',
-        },
-        {user: fullname || username},
-    ) : formatMessage({
-        id: 'user_profile.call.start',
-        defaultMessage: 'Start Call',
-    });
+    const startCallMessage = hasDMCall
+        ? formatMessage(
+              {
+                  id: "user_profile.call.ongoing",
+                  defaultMessage: "Call with {user} is ongoing",
+              },
+              { user: fullname || username }
+          )
+        : formatMessage({
+              id: "user_profile.call.start",
+              defaultMessage: "Start Call",
+          });
     const callButton = (
         <WithTooltip title={startCallMessage}>
             <button
-                id='startCallButton'
-                type='button'
+                id="startCallButton"
+                type="button"
                 disabled={disabled}
-                className='btn btn-icon btn-sm style--none'
+                className="btn btn-icon btn-sm style--none"
                 aria-label={startCallMessage}
             >
-                <span
-                    className='icon icon-phone'
-                    aria-hidden='true'
-                />
+                <span className="icon icon-phone" aria-hidden="true" />
             </button>
         </WithTooltip>
     );
