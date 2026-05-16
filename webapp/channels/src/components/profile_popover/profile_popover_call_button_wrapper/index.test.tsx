@@ -1,106 +1,106 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import { screen, render } from "@testing-library/react";
-import React from "react";
-import { Provider } from "react-redux";
-import configureStore from "redux-mock-store";
+import {screen, render} from '@testing-library/react';
+import React from 'react';
+import {Provider} from 'react-redux';
+import configureStore from 'redux-mock-store';
 
-import { TestHelper } from "../../../utils/test_helper";
+import {TestHelper} from '../../../utils/test_helper';
 
-import CallButton, { isUserInCall } from "./index";
+import CallButton, {isUserInCall} from './index';
 
-describe("isUserInCall", () => {
-    test("missing state", () => {
+describe('isUserInCall', () => {
+    test('missing state', () => {
         expect(
             isUserInCall(
                 {
-                    "plugins-com.mattermost.calls": {},
+                    'plugins-com.mattermost.calls': {},
                 } as any,
-                "userA",
-                "channelID"
-            )
+                'userA',
+                'channelID',
+            ),
         ).toBe(false);
     });
 
-    test("call state missing", () => {
+    test('call state missing', () => {
         expect(
             isUserInCall(
                 {
-                    "plugins-com.mattermost.calls": {
+                    'plugins-com.mattermost.calls': {
                         sessions: {
                             channelID: null,
                         },
                     },
                 } as any,
-                "userA",
-                "channelID"
-            )
+                'userA',
+                'channelID',
+            ),
         ).toBe(false);
     });
 
-    test("user not in call", () => {
+    test('user not in call', () => {
         expect(
             isUserInCall(
                 {
-                    "plugins-com.mattermost.calls": {
+                    'plugins-com.mattermost.calls': {
                         sessions: {
                             channelID: {
                                 sessionB: {
-                                    user_id: "userB",
+                                    user_id: 'userB',
                                 },
                             },
                         },
                     },
                 } as any,
-                "userA",
-                "channelID"
-            )
+                'userA',
+                'channelID',
+            ),
         ).toBe(false);
     });
 
-    test("user in call", () => {
+    test('user in call', () => {
         expect(
             isUserInCall(
                 {
-                    "plugins-com.mattermost.calls": {
+                    'plugins-com.mattermost.calls': {
                         sessions: {
                             channelID: {
                                 sessionB: {
-                                    user_id: "userB",
+                                    user_id: 'userB',
                                 },
                                 sessionA: {
-                                    user_id: "userA",
+                                    user_id: 'userA',
                                 },
                             },
                         },
                     },
                 } as any,
-                "userA",
-                "channelID"
-            )
+                'userA',
+                'channelID',
+            ),
         ).toBe(true);
     });
 });
 
-describe("CallButton", () => {
+describe('CallButton', () => {
     const mockStore = configureStore();
-    const userId = "user1";
-    const currentUserId = "current_user";
-    const dmChannelId = "dm_channel_id";
+    const userId = 'user1';
+    const currentUserId = 'current_user';
+    const dmChannelId = 'dm_channel_id';
     const baseProps = {
         userId,
         currentUserId,
-        fullname: "Test User",
-        username: "testuser",
+        fullname: 'Test User',
+        username: 'testuser',
     };
     const PluginComponent = () => {
-        return <button>{"Start Call"}</button>;
+        return <button>{'Start Call'}</button>;
     };
 
-    test("should not render when calls are disabled", () => {
+    test('should not render when calls are disabled', () => {
         const store = mockStore({
-            "plugins-com.mattermost.calls": {
+            'plugins-com.mattermost.calls': {
                 enabled: false,
             },
             entities: {
@@ -113,7 +113,7 @@ describe("CallButton", () => {
                                 name: `${currentUserId}__${userId}`,
                                 display_name: `${currentUserId}__${userId}`,
                                 delete_at: 0,
-                                type: "D",
+                                type: 'D',
                             }),
                         },
                     },
@@ -122,16 +122,16 @@ describe("CallButton", () => {
                     profiles: {
                         [currentUserId]: TestHelper.getUserMock({
                             id: currentUserId,
-                            roles: "system_user",
+                            roles: 'system_user',
                         }),
                     },
                 },
             },
             plugins: {
                 plugins: {
-                    "com.mattermost.calls": {
-                        id: "com.mattermost.calls",
-                        version: "1.0.0",
+                    'com.mattermost.calls': {
+                        id: 'com.mattermost.calls',
+                        version: '1.0.0',
                     },
                 },
             },
@@ -139,16 +139,16 @@ describe("CallButton", () => {
 
         render(
             <Provider store={store}>
-                <CallButton {...baseProps} />
-            </Provider>
+                <CallButton {...baseProps}/>
+            </Provider>,
         );
 
-        expect(screen.queryByTestId("startCallButton")).not.toBeInTheDocument();
+        expect(screen.queryByTestId('startCallButton')).not.toBeInTheDocument();
     });
 
-    test("should render for admin even in test mode", () => {
+    test('should render for admin even in test mode', () => {
         const store = mockStore({
-            "plugins-com.mattermost.calls": {
+            'plugins-com.mattermost.calls': {
                 enabled: true,
                 config: {
                     DefaultEnabled: false,
@@ -163,7 +163,7 @@ describe("CallButton", () => {
                             name: `${currentUserId}__${userId}`,
                             display_name: `${currentUserId}__${userId}`,
                             delete_at: 0,
-                            type: "D",
+                            type: 'D',
                         }),
                     },
                     myMembers: {
@@ -177,23 +177,23 @@ describe("CallButton", () => {
                     profiles: {
                         [currentUserId]: TestHelper.getUserMock({
                             id: currentUserId,
-                            roles: "system_admin",
+                            roles: 'system_admin',
                         }),
                     },
                 },
             },
             plugins: {
                 plugins: {
-                    "com.mattermost.calls": {
-                        id: "com.mattermost.calls",
-                        version: "1.0.0",
+                    'com.mattermost.calls': {
+                        id: 'com.mattermost.calls',
+                        version: '1.0.0',
                     },
                 },
                 components: {
                     CallButton: [
                         {
-                            id: "CallButton",
-                            plugin_id: "com.mattermost.calls",
+                            id: 'CallButton',
+                            plugin_id: 'com.mattermost.calls',
                             button: PluginComponent,
                         },
                     ],
@@ -208,16 +208,16 @@ describe("CallButton", () => {
 
         render(
             <Provider store={store}>
-                <CallButton {...baseProps} />
-            </Provider>
+                <CallButton {...baseProps}/>
+            </Provider>,
         );
 
-        expect(screen.getByLabelText("Start Call")).toBeInTheDocument();
+        expect(screen.getByLabelText('Start Call')).toBeInTheDocument();
     });
 
-    test("should render when calls are enabled and not in test mode", () => {
+    test('should render when calls are enabled and not in test mode', () => {
         const store = mockStore({
-            "plugins-com.mattermost.calls": {
+            'plugins-com.mattermost.calls': {
                 enabled: true,
                 config: {
                     DefaultEnabled: true,
@@ -234,7 +234,7 @@ describe("CallButton", () => {
                             name: `${currentUserId}__${userId}`,
                             display_name: `${currentUserId}__${userId}`,
                             delete_at: 0,
-                            type: "D",
+                            type: 'D',
                         }),
                     },
                     myMembers: {
@@ -248,23 +248,23 @@ describe("CallButton", () => {
                     profiles: {
                         [currentUserId]: TestHelper.getUserMock({
                             id: currentUserId,
-                            roles: "system_admin",
+                            roles: 'system_admin',
                         }),
                     },
                 },
             },
             plugins: {
                 plugins: {
-                    "com.mattermost.calls": {
-                        id: "com.mattermost.calls",
-                        version: "1.0.0",
+                    'com.mattermost.calls': {
+                        id: 'com.mattermost.calls',
+                        version: '1.0.0',
                     },
                 },
                 components: {
                     CallButton: [
                         {
-                            id: "CallButton",
-                            plugin_id: "com.mattermost.calls",
+                            id: 'CallButton',
+                            plugin_id: 'com.mattermost.calls',
                             button: PluginComponent,
                         },
                     ],
@@ -279,22 +279,22 @@ describe("CallButton", () => {
 
         render(
             <Provider store={store}>
-                <CallButton {...baseProps} />
-            </Provider>
+                <CallButton {...baseProps}/>
+            </Provider>,
         );
 
-        expect(screen.getByLabelText("Start Call")).toBeInTheDocument();
+        expect(screen.getByLabelText('Start Call')).toBeInTheDocument();
     });
 
-    test("should render when channel is explicitly enabled regardless of test mode", () => {
+    test('should render when channel is explicitly enabled regardless of test mode', () => {
         const store = mockStore({
-            "plugins-com.mattermost.calls": {
+            'plugins-com.mattermost.calls': {
                 enabled: true,
                 config: {
                     DefaultEnabled: false,
                 },
                 channels: {
-                    [dmChannelId]: { enabled: true },
+                    [dmChannelId]: {enabled: true},
                 },
                 sessions: {},
             },
@@ -307,7 +307,7 @@ describe("CallButton", () => {
                             name: `${currentUserId}__${userId}`,
                             display_name: `${currentUserId}__${userId}`,
                             delete_at: 0,
-                            type: "D",
+                            type: 'D',
                         }),
                     },
                     myMembers: {
@@ -321,23 +321,23 @@ describe("CallButton", () => {
                     profiles: {
                         [currentUserId]: TestHelper.getUserMock({
                             id: currentUserId,
-                            roles: "system_admin",
+                            roles: 'system_admin',
                         }),
                     },
                 },
             },
             plugins: {
                 plugins: {
-                    "com.mattermost.calls": {
-                        id: "com.mattermost.calls",
-                        version: "1.0.0",
+                    'com.mattermost.calls': {
+                        id: 'com.mattermost.calls',
+                        version: '1.0.0',
                     },
                 },
                 components: {
                     CallButton: [
                         {
-                            id: "CallButton",
-                            plugin_id: "com.mattermost.calls",
+                            id: 'CallButton',
+                            plugin_id: 'com.mattermost.calls',
                             button: PluginComponent,
                         },
                     ],
@@ -352,16 +352,16 @@ describe("CallButton", () => {
 
         render(
             <Provider store={store}>
-                <CallButton {...baseProps} />
-            </Provider>
+                <CallButton {...baseProps}/>
+            </Provider>,
         );
 
-        expect(screen.getByLabelText("Start Call")).toBeInTheDocument();
+        expect(screen.getByLabelText('Start Call')).toBeInTheDocument();
     });
 
-    test("should not render for regular user when test mode is enabled", () => {
+    test('should not render for regular user when test mode is enabled', () => {
         const store = mockStore({
-            "plugins-com.mattermost.calls": {
+            'plugins-com.mattermost.calls': {
                 enabled: true,
                 config: {
                     DefaultEnabled: false,
@@ -378,7 +378,7 @@ describe("CallButton", () => {
                             name: `${currentUserId}__${userId}`,
                             display_name: `${currentUserId}__${userId}`,
                             delete_at: 0,
-                            type: "D",
+                            type: 'D',
                         }),
                     },
                     myMembers: {
@@ -392,23 +392,23 @@ describe("CallButton", () => {
                     profiles: {
                         [currentUserId]: TestHelper.getUserMock({
                             id: currentUserId,
-                            roles: "system_user",
+                            roles: 'system_user',
                         }),
                     },
                 },
             },
             plugins: {
                 plugins: {
-                    "com.mattermost.calls": {
-                        id: "com.mattermost.calls",
-                        version: "1.0.0",
+                    'com.mattermost.calls': {
+                        id: 'com.mattermost.calls',
+                        version: '1.0.0',
                     },
                 },
                 components: {
                     CallButton: [
                         {
-                            id: "CallButton",
-                            plugin_id: "com.mattermost.calls",
+                            id: 'CallButton',
+                            plugin_id: 'com.mattermost.calls',
                             button: PluginComponent,
                         },
                     ],
@@ -423,22 +423,22 @@ describe("CallButton", () => {
 
         render(
             <Provider store={store}>
-                <CallButton {...baseProps} />
-            </Provider>
+                <CallButton {...baseProps}/>
+            </Provider>,
         );
 
-        expect(screen.queryByLabelText("Start Call")).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Start Call')).not.toBeInTheDocument();
     });
 
-    test("should not render when channel is explicitly disabled", () => {
+    test('should not render when channel is explicitly disabled', () => {
         const store = mockStore({
-            "plugins-com.mattermost.calls": {
+            'plugins-com.mattermost.calls': {
                 enabled: true,
                 config: {
                     DefaultEnabled: true,
                 },
                 channels: {
-                    [dmChannelId]: { enabled: false },
+                    [dmChannelId]: {enabled: false},
                 },
                 sessions: {},
             },
@@ -451,7 +451,7 @@ describe("CallButton", () => {
                             name: `${currentUserId}__${userId}`,
                             display_name: `${currentUserId}__${userId}`,
                             delete_at: 0,
-                            type: "D",
+                            type: 'D',
                         }),
                     },
                     myMembers: {
@@ -464,16 +464,16 @@ describe("CallButton", () => {
                     profiles: {
                         [currentUserId]: TestHelper.getUserMock({
                             id: currentUserId,
-                            roles: "system_admin",
+                            roles: 'system_admin',
                         }),
                     },
                 },
             },
             plugins: {
                 plugins: {
-                    "com.mattermost.calls": {
-                        id: "com.mattermost.calls",
-                        version: "1.0.0",
+                    'com.mattermost.calls': {
+                        id: 'com.mattermost.calls',
+                        version: '1.0.0',
                     },
                 },
             },
@@ -481,16 +481,16 @@ describe("CallButton", () => {
 
         render(
             <Provider store={store}>
-                <CallButton {...baseProps} />
-            </Provider>
+                <CallButton {...baseProps}/>
+            </Provider>,
         );
 
-        expect(screen.queryByLabelText("Start Call")).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Start Call')).not.toBeInTheDocument();
     });
 
-    test("should disable button when there is an ongoing call", () => {
+    test('should disable button when there is an ongoing call', () => {
         const store = mockStore({
-            "plugins-com.mattermost.calls": {
+            'plugins-com.mattermost.calls': {
                 enabled: true,
                 config: {
                     DefaultEnabled: true,
@@ -512,7 +512,7 @@ describe("CallButton", () => {
                             name: `${currentUserId}__${userId}`,
                             display_name: `${currentUserId}__${userId}`,
                             delete_at: 0,
-                            type: "D",
+                            type: 'D',
                         }),
                     },
                     myMembers: {
@@ -525,16 +525,16 @@ describe("CallButton", () => {
                     profiles: {
                         [currentUserId]: TestHelper.getUserMock({
                             id: currentUserId,
-                            roles: "system_admin",
+                            roles: 'system_admin',
                         }),
                     },
                 },
             },
             plugins: {
                 plugins: {
-                    "com.mattermost.calls": {
-                        id: "com.mattermost.calls",
-                        version: "1.0.0",
+                    'com.mattermost.calls': {
+                        id: 'com.mattermost.calls',
+                        version: '1.0.0',
                     },
                 },
             },
@@ -542,11 +542,11 @@ describe("CallButton", () => {
 
         render(
             <Provider store={store}>
-                <CallButton {...baseProps} />
-            </Provider>
+                <CallButton {...baseProps}/>
+            </Provider>,
         );
 
-        const button = screen.getByLabelText("Call with Test User is ongoing");
+        const button = screen.getByLabelText('Call with Test User is ongoing');
         expect(button).toBeInTheDocument();
         expect(button).toBeDisabled();
     });
