@@ -67,7 +67,7 @@ describe("components/ChannelHeader call button visibility", () => {
         ).toBeInTheDocument();
     });
 
-    test("should hide call button in shared channel when shared channel plugins are disabled", () => {
+    test("should render call button in shared channel when shared channel plugins are disabled", () => {
         renderWithContext(
             <ChannelHeader
                 {...baseProps}
@@ -81,8 +81,8 @@ describe("components/ChannelHeader call button visibility", () => {
         );
 
         expect(
-            screen.queryByTestId("channel-header-call-button")
-        ).not.toBeInTheDocument();
+            screen.getByTestId("channel-header-call-button")
+        ).toBeInTheDocument();
     });
 
     test("should render call button in shared channel when shared channel plugins are enabled", () => {
