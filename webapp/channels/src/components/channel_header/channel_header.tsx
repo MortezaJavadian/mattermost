@@ -1,39 +1,39 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import classNames from "classnames";
-import React from "react";
-import type { MouseEvent, ReactNode, RefObject } from "react";
-import { FormattedMessage, injectIntl } from "react-intl";
-import type { WrappedComponentProps } from "react-intl";
+import classNames from 'classnames';
+import React from 'react';
+import type {MouseEvent, ReactNode, RefObject} from 'react';
+import {FormattedMessage, injectIntl} from 'react-intl';
+import type {WrappedComponentProps} from 'react-intl';
 
-import { WithTooltip } from "@mattermost/shared/components/tooltip";
+import {WithTooltip} from '@mattermost/shared/components/tooltip';
 
-import { getPopoutChannelTitle } from "components/channel_popout/channel_popout";
-import CustomStatusEmoji from "components/custom_status/custom_status_emoji";
-import CustomStatusText from "components/custom_status/custom_status_text";
-import PopoutButton from "components/popout_button";
-import Timestamp from "components/timestamp";
-import Tag from "components/widgets/tag/tag";
+import {getPopoutChannelTitle} from 'components/channel_popout/channel_popout';
+import CustomStatusEmoji from 'components/custom_status/custom_status_emoji';
+import CustomStatusText from 'components/custom_status/custom_status_text';
+import PopoutButton from 'components/popout_button';
+import Timestamp from 'components/timestamp';
+import Tag from 'components/widgets/tag/tag';
 
-import CallButton from "plugins/call_button";
-import ChannelHeaderPlug from "plugins/channel_header_plug";
-import Pluggable from "plugins/pluggable";
-import { getChannelRoutePathAndIdentifier } from "utils/channel_utils";
-import { Constants, NotificationLevels, RHSStates } from "utils/constants";
+import CallButton from 'plugins/call_button';
+import ChannelHeaderPlug from 'plugins/channel_header_plug';
+import Pluggable from 'plugins/pluggable';
+import {getChannelRoutePathAndIdentifier} from 'utils/channel_utils';
+import {Constants, NotificationLevels, RHSStates} from 'utils/constants';
 import {
     canPopout,
     isChannelPopoutWindow,
     popoutChannel,
-} from "utils/popouts/popout_windows";
-import { isEmptyObject } from "utils/utils";
+} from 'utils/popouts/popout_windows';
+import {isEmptyObject} from 'utils/utils';
 
-import ChannelHeaderText from "./channel_header_text";
-import ChannelHeaderTitle from "./channel_header_title";
-import ChannelInfoButton from "./channel_info_button";
-import HeaderIconWrapper from "./components/header_icon_wrapper";
+import ChannelHeaderText from './channel_header_text';
+import ChannelHeaderTitle from './channel_header_title';
+import ChannelInfoButton from './channel_info_button';
+import HeaderIconWrapper from './components/header_icon_wrapper';
 
-import type { PropsFromRedux } from "./index";
+import type {PropsFromRedux} from './index';
 
 export type Props = WrappedComponentProps & PropsFromRedux;
 
@@ -47,7 +47,7 @@ class ChannelHeader extends React.PureComponent<Props> {
 
     componentDidMount() {
         this.props.actions.getCustomEmojisInText(
-            this.props.channel ? this.props.channel.header : ""
+            this.props.channel ? this.props.channel.header : '',
         );
 
         // Fetch remote names for shared channels on initial mount
@@ -58,8 +58,8 @@ class ChannelHeader extends React.PureComponent<Props> {
     }
 
     componentDidUpdate(prevProps: Props) {
-        const header = this.props.channel ? this.props.channel.header : "";
-        const prevHeader = prevProps.channel ? prevProps.channel.header : "";
+        const header = this.props.channel ? this.props.channel.header : '';
+        const prevHeader = prevProps.channel ? prevProps.channel.header : '';
         if (header !== prevHeader) {
             this.props.actions.getCustomEmojisInText(header);
         }
@@ -75,20 +75,20 @@ class ChannelHeader extends React.PureComponent<Props> {
                 // Only force refresh when a channel's shared status changes
                 this.props.actions.fetchChannelRemotes(
                     this.props.channel.id,
-                    true
+                    true,
                 );
             }
         }
     }
 
     unmute = () => {
-        const { actions, channel, channelMember, currentUser } = this.props;
+        const {actions, channel, channelMember, currentUser} = this.props;
 
         if (!channelMember || !currentUser || !channel) {
             return;
         }
 
-        const options = { mark_unread: NotificationLevels.ALL };
+        const options = {mark_unread: NotificationLevels.ALL};
         actions.updateChannelNotifyProps(currentUser.id, channel.id, options);
     };
 
@@ -110,17 +110,17 @@ class ChannelHeader extends React.PureComponent<Props> {
     };
 
     popoutChannelView = () => {
-        const { channel, team, dmUser, intl } = this.props;
+        const {channel, team, dmUser, intl} = this.props;
         if (channel && team) {
-            const { path, identifier } = getChannelRoutePathAndIdentifier(
+            const {path, identifier} = getChannelRoutePathAndIdentifier(
                 channel,
-                dmUser?.username
+                dmUser?.username,
             );
             popoutChannel(
                 intl.formatMessage(getPopoutChannelTitle(channel.type)),
                 team.name,
                 path,
-                identifier
+                identifier,
             );
         }
     };
@@ -134,7 +134,7 @@ class ChannelHeader extends React.PureComponent<Props> {
     };
 
     renderCustomStatus = () => {
-        const { customStatus, isCustomStatusEnabled, isCustomStatusExpired } =
+        const {customStatus, isCustomStatusEnabled, isCustomStatusExpired} =
             this.props;
         const isStatusSet =
             !isCustomStatusExpired &&
@@ -144,18 +144,18 @@ class ChannelHeader extends React.PureComponent<Props> {
         }
 
         return (
-            <div className="custom-emoji__wrapper">
+            <div className='custom-emoji__wrapper'>
                 <CustomStatusEmoji
                     userID={this.props.dmUser?.id}
                     showTooltip={true}
                     emojiStyle={{
-                        verticalAlign: "top",
-                        margin: "0 4px 1px",
+                        verticalAlign: 'top',
+                        margin: '0 4px 1px',
                     }}
                 />
                 <CustomStatusText
                     text={customStatus?.text}
-                    className="custom-emoji__text"
+                    className='custom-emoji__text'
                 />
             </div>
         );
@@ -179,50 +179,50 @@ class ChannelHeader extends React.PureComponent<Props> {
         }
 
         const ariaLabelChannelHeader = this.props.intl.formatMessage({
-            id: "accessibility.sections.channelHeader",
-            defaultMessage: "channel header region",
+            id: 'accessibility.sections.channelHeader',
+            defaultMessage: 'channel header region',
         });
 
-        let hasGuestsText: ReactNode = "";
+        let hasGuestsText: ReactNode = '';
         if (hasGuests && !hideGuestTags) {
             hasGuestsText = (
-                <span className="has-guest-header">
+                <span className='has-guest-header'>
                     <span tabIndex={0}>
                         <FormattedMessage
-                            id="channel_header.channelHasGuests"
-                            defaultMessage="Channel has guests"
+                            id='channel_header.channelHasGuests'
+                            defaultMessage='Channel has guests'
                         />
                     </span>
                 </span>
             );
         }
 
-        let autotranslationMessage: ReactNode = "";
+        let autotranslationMessage: ReactNode = '';
         if (this.props.isChannelAutotranslated) {
             autotranslationMessage = (
                 <WithTooltip
                     title={this.props.intl.formatMessage({
-                        id: "channel_header.autotranslationMessage.tooltip.title",
-                        defaultMessage: "Auto-translation is enabled",
+                        id: 'channel_header.autotranslationMessage.tooltip.title',
+                        defaultMessage: 'Auto-translation is enabled',
                     })}
                     hint={this.props.intl.formatMessage({
-                        id: "channel_header.autotranslationMessage.tooltip.hint",
+                        id: 'channel_header.autotranslationMessage.tooltip.hint',
                         defaultMessage:
-                            "This channel is being automatically translated to your language",
+                            'This channel is being automatically translated to your language',
                     })}
                 >
                     <div
-                        className="autotranslation-header"
-                        data-testid="autotranslation-badge"
+                        className='autotranslation-header'
+                        data-testid='autotranslation-badge'
                     >
                         <Tag
                             text={this.props.intl.formatMessage({
-                                id: "channel_header.autotranslationMessage",
-                                defaultMessage: "Auto-translated",
+                                id: 'channel_header.autotranslationMessage',
+                                defaultMessage: 'Auto-translated',
                             })}
-                            icon={"translate"}
-                            size="xs"
-                            variant="default"
+                            icon={'translate'}
+                            size='xs'
+                            variant='default'
                         />
                     </div>
                 </WithTooltip>
@@ -236,7 +236,7 @@ class ChannelHeader extends React.PureComponent<Props> {
             (!dmUser && channel.type === Constants.DM_CHANNEL)
         ) {
             // Use an empty div to make sure the header's height stays constant
-            return <div className="channel-header" />;
+            return <div className='channel-header'/>;
         }
 
         const isDirect = channel.type === Constants.DM_CHANNEL;
@@ -245,10 +245,10 @@ class ChannelHeader extends React.PureComponent<Props> {
         if (isGroup) {
             if (hasGuests && !hideGuestTags) {
                 hasGuestsText = (
-                    <span className="has-guest-header">
+                    <span className='has-guest-header'>
                         <FormattedMessage
-                            id="channel_header.groupMessageHasGuests"
-                            defaultMessage="This group message has guests"
+                            id='channel_header.groupMessageHasGuests'
+                            defaultMessage='This group message has guests'
                         />
                     </span>
                 );
@@ -258,7 +258,7 @@ class ChannelHeader extends React.PureComponent<Props> {
         let dmHeaderTextStatus: ReactNode;
         if (isDirect && !dmUser?.delete_at && !dmUser?.is_bot) {
             dmHeaderTextStatus = (
-                <span className="header-status__text">
+                <span className='header-status__text'>
                     {this.renderCustomStatus()}
                 </span>
             );
@@ -269,11 +269,11 @@ class ChannelHeader extends React.PureComponent<Props> {
                 this.props.timestampUnits
             ) {
                 dmHeaderTextStatus = (
-                    <span className="header-status__text">
-                        <span className="last-active__text">
+                    <span className='header-status__text'>
+                        <span className='last-active__text'>
                             <FormattedMessage
-                                id="channel_header.lastActive"
-                                defaultMessage="Last online {timestamp}"
+                                id='channel_header.lastActive'
+                                defaultMessage='Last online {timestamp}'
                                 values={{
                                     timestamp: (
                                         <Timestamp
@@ -282,7 +282,7 @@ class ChannelHeader extends React.PureComponent<Props> {
                                             }
                                             units={this.props.timestampUnits}
                                             useTime={false}
-                                            style={"short"}
+                                            style={'short'}
                                         />
                                     ),
                                 }}
@@ -295,44 +295,47 @@ class ChannelHeader extends React.PureComponent<Props> {
         }
 
         const channelFilesIconClass = classNames(
-            "channel-header__icon channel-header__icon--left btn btn-icon btn-xs ",
+            'channel-header__icon channel-header__icon--left btn btn-icon btn-xs ',
             {
-                "channel-header__icon--active":
+                'channel-header__icon--active':
                     rhsState === RHSStates.CHANNEL_FILES,
-            }
+            },
         );
-        const channelFilesIcon = <i className="icon icon-file-text-outline" />;
+        const channelFilesIcon = <i className='icon icon-file-text-outline'/>;
         const pinnedIconClass = classNames(
-            "channel-header__icon channel-header__icon--wide channel-header__icon--left btn btn-icon btn-xs",
+            'channel-header__icon channel-header__icon--wide channel-header__icon--left btn btn-icon btn-xs',
             {
-                "channel-header__icon--active": rhsState === RHSStates.PIN,
-            }
+                'channel-header__icon--active': rhsState === RHSStates.PIN,
+            },
         );
         const pinnedIcon = this.props.pinnedPostsCount ? (
             <>
                 <i
-                    aria-hidden="true"
-                    className="icon icon-pin-outline channel-header__pin"
+                    aria-hidden='true'
+                    className='icon icon-pin-outline channel-header__pin'
                 />
-                <span id="channelPinnedPostCountText" className="icon__text">
+                <span
+                    id='channelPinnedPostCountText'
+                    className='icon__text'
+                >
                     {this.props.pinnedPostsCount}
                 </span>
             </>
         ) : (
             <i
-                aria-hidden="true"
-                className="icon icon-pin-outline channel-header__pin"
+                aria-hidden='true'
+                className='icon icon-pin-outline channel-header__pin'
             />
         );
 
         const pinnedButton = this.props.pinnedPostsCount ? (
             <HeaderIconWrapper
                 buttonClass={pinnedIconClass}
-                buttonId={"channelHeaderPinButton"}
+                buttonId={'channelHeaderPinButton'}
                 onClick={this.showPinnedPosts}
                 tooltip={this.props.intl.formatMessage({
-                    id: "channel_header.pinnedPosts",
-                    defaultMessage: "Pinned messages",
+                    id: 'channel_header.pinnedPosts',
+                    defaultMessage: 'Pinned messages',
                 })}
             >
                 {pinnedIcon}
@@ -342,30 +345,36 @@ class ChannelHeader extends React.PureComponent<Props> {
         let memberListButton = null;
         if (!isDirect) {
             const membersIconClass = classNames(
-                "member-rhs__trigger channel-header__icon channel-header__icon--wide channel-header__icon--left btn btn-icon btn-xs",
+                'member-rhs__trigger channel-header__icon channel-header__icon--wide channel-header__icon--left btn btn-icon btn-xs',
                 {
-                    "channel-header__icon--active":
+                    'channel-header__icon--active':
                         rhsState === RHSStates.CHANNEL_MEMBERS,
-                }
+                },
             );
             const membersIcon = this.props.memberCount ? (
                 <>
                     <i
-                        aria-hidden="true"
-                        className="icon icon-account-outline channel-header__members"
+                        aria-hidden='true'
+                        className='icon icon-account-outline channel-header__members'
                     />
-                    <span id="channelMemberCountText" className="icon__text">
+                    <span
+                        id='channelMemberCountText'
+                        className='icon__text'
+                    >
                         {this.props.memberCount}
                     </span>
                 </>
             ) : (
                 <>
                     <i
-                        aria-hidden="true"
-                        className="icon icon-account-outline channel-header__members"
+                        aria-hidden='true'
+                        className='icon icon-account-outline channel-header__members'
                     />
-                    <span id="channelMemberCountText" className="icon__text">
-                        {"-"}
+                    <span
+                        id='channelMemberCountText'
+                        className='icon__text'
+                    >
+                        {'-'}
                     </span>
                 </>
             );
@@ -373,11 +382,11 @@ class ChannelHeader extends React.PureComponent<Props> {
             memberListButton = (
                 <HeaderIconWrapper
                     tooltip={this.props.intl.formatMessage({
-                        id: "channel_header.channelMembers",
-                        defaultMessage: "Members",
+                        id: 'channel_header.channelMembers',
+                        defaultMessage: 'Members',
                     })}
                     buttonClass={membersIconClass}
-                    buttonId={"member_rhs"}
+                    buttonId={'member_rhs'}
                     onClick={this.toggleChannelMembersRHS}
                 >
                     {membersIcon}
@@ -391,24 +400,24 @@ class ChannelHeader extends React.PureComponent<Props> {
                 <WithTooltip
                     title={
                         <FormattedMessage
-                            id="channelHeader.unmute"
-                            defaultMessage="Unmute"
+                            id='channelHeader.unmute'
+                            defaultMessage='Unmute'
                         />
                     }
                 >
                     <button
-                        id="toggleMute"
+                        id='toggleMute'
                         onClick={this.unmute}
                         className={
-                            "channel-header__mute inactive btn btn-icon btn-xs"
+                            'channel-header__mute inactive btn btn-icon btn-xs'
                         }
                         aria-label={this.props.intl.formatMessage({
-                            id: "channelHeader.unmute",
-                            defaultMessage: "Unmute",
+                            id: 'channelHeader.unmute',
+                            defaultMessage: 'Unmute',
                         })}
                     >
                         <i
-                            className={"icon icon-bell-off-outline"}
+                            className={'icon icon-bell-off-outline'}
                             aria-hidden={true}
                         />
                     </button>
@@ -418,27 +427,27 @@ class ChannelHeader extends React.PureComponent<Props> {
 
         return (
             <div
-                id="channel-header"
+                id='channel-header'
                 aria-label={ariaLabelChannelHeader}
-                role="banner"
+                role='banner'
                 tabIndex={-1}
                 data-channelid={`${channel.id}`}
-                className="channel-header alt a11y__region"
-                data-a11y-sort-order="8"
+                className='channel-header alt a11y__region'
+                data-a11y-sort-order='8'
             >
-                <div className="flex-parent">
-                    <div className="flex-child">
+                <div className='flex-parent'>
+                    <div className='flex-child'>
                         <div
-                            id="channelHeaderInfo"
-                            className="channel-header__info"
+                            id='channelHeaderInfo'
+                            className='channel-header__info'
                         >
-                            <div className="channel-header__title dropdown">
+                            <div className='channel-header__title dropdown'>
                                 <ChannelHeaderTitle
                                     dmUser={dmUser}
                                     gmMembers={gmMembers}
                                     remoteNames={this.props.remoteNames}
                                 />
-                                <div className="channel-header__icons">
+                                <div className='channel-header__icons'>
                                     {muteTrigger}
                                     {memberListButton}
                                     {pinnedButton}
@@ -446,29 +455,29 @@ class ChannelHeader extends React.PureComponent<Props> {
                                         <HeaderIconWrapper
                                             buttonClass={channelFilesIconClass}
                                             buttonId={
-                                                "channelHeaderFilesButton"
+                                                'channelHeaderFilesButton'
                                             }
                                             onClick={this.showChannelFiles}
                                             tooltip={this.props.intl.formatMessage(
                                                 {
-                                                    id: "channel_header.channelFiles",
+                                                    id: 'channel_header.channelFiles',
                                                     defaultMessage:
-                                                        "Channel files",
-                                                }
+                                                        'Channel files',
+                                                },
                                             )}
                                         >
                                             {channelFilesIcon}
                                         </HeaderIconWrapper>
                                     )}
                                     <Pluggable
-                                        pluggableName="ChannelHeaderIcon"
+                                        pluggableName='ChannelHeaderIcon'
                                         channel={channel}
                                         channelMember={channelMember!}
                                     />
                                 </div>
                                 <div
-                                    id="channelHeaderDescription"
-                                    className="channel-header__description"
+                                    id='channelHeaderDescription'
+                                    className='channel-header__description'
                                 >
                                     {dmHeaderTextStatus}
                                     {hasGuestsText}
@@ -489,14 +498,14 @@ class ChannelHeader extends React.PureComponent<Props> {
                             channelMember={channelMember}
                         />
                     )}
-                    <CallButton />
+                    <CallButton/>
                     {canPopout() && !isChannelPopoutWindow() && (
                         <PopoutButton
-                            className="channel-header__icon"
+                            className='channel-header__icon'
                             onClick={this.popoutChannelView}
                         />
                     )}
-                    <ChannelInfoButton channel={channel} />
+                    <ChannelInfoButton channel={channel}/>
                 </div>
             </div>
         );

@@ -1,57 +1,57 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import React from "react";
+import React from 'react';
 
 import {
     fireEvent,
     renderWithContext,
     screen,
-} from "tests/react_testing_utils";
-import { TestHelper } from "utils/test_helper";
+} from 'tests/react_testing_utils';
+import {TestHelper} from 'utils/test_helper';
 
-import type { CallButtonAction } from "types/store/plugins";
+import type {CallButtonAction} from 'types/store/plugins';
 
-import CallButton from "./call_button";
+import CallButton from './call_button';
 
-describe("plugins/call_button/CallButton", () => {
-    const currentChannel = TestHelper.getChannelMock({ id: "channel1" });
+describe('plugins/call_button/CallButton', () => {
+    const currentChannel = TestHelper.getChannelMock({id: 'channel1'});
     const channelMember = TestHelper.getChannelMembershipMock({
-        channel_id: "channel1",
-        user_id: "user1",
+        channel_id: 'channel1',
+        user_id: 'user1',
     });
 
     const makeCallAction = () => jest.fn();
 
     const makeSingleAction = (
-        overrides: Partial<CallButtonAction> = {}
+        overrides: Partial<CallButtonAction> = {},
     ): CallButtonAction => ({
-        id: "call-action-1",
-        pluginId: "com.mattermost.calls",
-        button: React.createElement("button", {
-            "data-testid": "plugin-call-button",
+        id: 'call-action-1',
+        pluginId: 'com.mattermost.calls',
+        button: React.createElement('button', {
+            'data-testid': 'plugin-call-button',
         }),
-        dropdownButton: React.createElement("button", {
-            "data-testid": "plugin-dropdown-button",
+        dropdownButton: React.createElement('button', {
+            'data-testid': 'plugin-dropdown-button',
         }),
         action: makeCallAction(),
         ...overrides,
     });
 
-    test("should render nothing when there are no call actions", () => {
-        const { container } = renderWithContext(
+    test('should render nothing when there are no call actions', () => {
+        const {container} = renderWithContext(
             <CallButton
                 pluginCallComponents={[]}
                 currentChannel={currentChannel}
                 channelMember={channelMember}
                 sidebarOpen={false}
-            />
+            />,
         );
 
         expect(container).toBeEmptyDOMElement();
     });
 
-    test("should render a provided single plugin call button", () => {
+    test('should render a provided single plugin call button', () => {
         const action = makeSingleAction();
 
         renderWithContext(
@@ -60,30 +60,30 @@ describe("plugins/call_button/CallButton", () => {
                 currentChannel={currentChannel}
                 channelMember={channelMember}
                 sidebarOpen={false}
-            />
+            />,
         );
 
-        expect(screen.getByTestId("plugin-call-button")).toBeInTheDocument();
+        expect(screen.getByTestId('plugin-call-button')).toBeInTheDocument();
     });
 
-    test("should invoke action when clicking provided plugin button", () => {
+    test('should invoke action when clicking provided plugin button', () => {
         const onCall = makeCallAction();
 
         renderWithContext(
             <CallButton
-                pluginCallComponents={[makeSingleAction({ action: onCall })]}
+                pluginCallComponents={[makeSingleAction({action: onCall})]}
                 currentChannel={currentChannel}
                 channelMember={channelMember}
                 sidebarOpen={false}
-            />
+            />,
         );
 
-        fireEvent.click(screen.getByTestId("plugin-call-button"));
+        fireEvent.click(screen.getByTestId('plugin-call-button'));
         expect(onCall).toHaveBeenCalledTimes(1);
         expect(onCall).toHaveBeenCalledWith(currentChannel, channelMember);
     });
 
-    test("should render fallback call button when plugin button is missing", () => {
+    test('should render fallback call button when plugin button is missing', () => {
         renderWithContext(
             <CallButton
                 pluginCallComponents={[
@@ -94,15 +94,15 @@ describe("plugins/call_button/CallButton", () => {
                 currentChannel={currentChannel}
                 channelMember={channelMember}
                 sidebarOpen={false}
-            />
+            />,
         );
 
         expect(
-            screen.getByRole("button", { name: /call/i })
+            screen.getByRole('button', {name: /call/i}),
         ).toBeInTheDocument();
     });
 
-    test("should invoke action when clicking fallback call button", () => {
+    test('should invoke action when clicking fallback call button', () => {
         const onCall = makeCallAction();
 
         renderWithContext(
@@ -116,32 +116,32 @@ describe("plugins/call_button/CallButton", () => {
                 currentChannel={currentChannel}
                 channelMember={channelMember}
                 sidebarOpen={false}
-            />
+            />,
         );
 
-        fireEvent.click(screen.getByRole("button", { name: /call/i }));
+        fireEvent.click(screen.getByRole('button', {name: /call/i}));
         expect(onCall).toHaveBeenCalledTimes(1);
         expect(onCall).toHaveBeenCalledWith(currentChannel, channelMember);
     });
 
-    test("should render dropdown call button for multiple call actions", () => {
+    test('should render dropdown call button for multiple call actions', () => {
         renderWithContext(
             <CallButton
                 pluginCallComponents={[
                     makeSingleAction(),
                     makeSingleAction({
-                        id: "call-action-2",
-                        pluginId: "com.example.calls",
+                        id: 'call-action-2',
+                        pluginId: 'com.example.calls',
                     }),
                 ]}
                 currentChannel={currentChannel}
                 channelMember={channelMember}
                 sidebarOpen={false}
-            />
+            />,
         );
 
-        expect(screen.getByRole("button", { name: /call/i })).toHaveClass(
-            "dropdown"
+        expect(screen.getByRole('button', {name: /call/i})).toHaveClass(
+            'dropdown',
         );
     });
 });
